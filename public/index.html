@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heróis Improváveis — Login</title>
+<link rel="stylesheet" href="/css/shared.css">
+<style>
+body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+#login-wrap { width: 100%; max-width: 380px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+.logo { text-align: center; }
+.logo h1 { font-family: var(--font-d); font-size: 1.1rem; letter-spacing: 4px; color: var(--accent); }
+.logo p  { font-size: .6rem; color: var(--muted); letter-spacing: 2px; margin-top: 4px; }
+.form-box { display: flex; flex-direction: column; gap: 12px; }
+.tab-row { display: flex; gap: 0; border-bottom: 1px solid var(--border2); margin-bottom: 4px; }
+.tab-btn { flex: 1; font-family: var(--font-d); font-size: .58rem; letter-spacing: 1px; padding: 8px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; text-transform: uppercase; transition: .2s; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.error { font-family: var(--font-m); font-size: .68rem; color: var(--accent3); padding: 8px 10px; border: 1px solid var(--accent3); display: none; }
+.error.show { display: block; }
+#setup-note { font-family: var(--font-m); font-size: .65rem; color: var(--accent2); border: 1px solid var(--accent2); padding: 10px; line-height: 1.6; display: none; }
+</style>
+</head>
+<body>
+<div id="login-wrap">
+  <div class="logo">
+    <h1>⚡ Heróis Improváveis</h1>
+    <p>PLATAFORMA DE RPG · SISTEMA 4C</p>
+  </div>
+
+  <div id="setup-note">
+    🎲 Primeira vez aqui! Crie a conta do <strong>Mestre</strong> para começar.
+  </div>
+
+  <div class="card form-box" id="login-box">
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="showTab('login')">Entrar</button>
+      <button class="tab-btn" onclick="showTab('setup')" id="setup-tab" style="display:none">Criar Mestre</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="tab-login">
+      <div class="form-box">
+        <div class="field"><label>Usuário</label><input class="inp" id="l-user" type="text" placeholder="seu_usuario" autocomplete="username"/></div>
+        <div class="field"><label>Senha</label><input class="inp" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+        <div class="error" id="l-err"></div>
+        <button class="btn btn-accent full" onclick="doLogin()">▶ Entrar</button>
+      </div>
+    </div>
+
+    <!-- SETUP FORM -->
+    <div id="tab-setup" style="display:none">
+      <div class="form-box">
+        <div class="field"><label>Nome de exibição</label><input class="inp" id="s-display" type="text" placeholder="Mael Narrador"/></div>
+        <div class="field"><label>Usuário</label><input class="inp" id="s-user" type="text" placeholder="mestre"/></div>
+        <div class="field"><label>Senha</label><input class="inp" id="s-pass" type="password" placeholder="••••••••"/></div>
+        <div class="field"><label>Confirmar senha</label><input class="inp" id="s-pass2" type="password" placeholder="••••••••"/></div>
+        <div class="error" id="s-err"></div>
+        <button class="btn btn-accent full" onclick="doSetup()">✓ Criar Mestre</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+function showTab(t) {
+  document.getElementById('tab-login').style.display = t==='login'?'':'none';
+  document.getElementById('tab-setup').style.display = t==='setup'?'':'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', (i===0&&t==='login')||(i===1&&t==='setup')));
+}
+
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+function hideErr(id) { document.getElementById(id).classList.remove('show'); }
+
+async function doLogin() {
+  hideErr('l-err');
+  const username = document.getElementById('l-user').value.trim();
+  const password = document.getElementById('l-pass').value;
+  if (!username || !password) return showErr('l-err', 'Preencha todos os campos');
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) return showErr('l-err', data.error);
+    localStorage.setItem('hi_token', data.token);
+    localStorage.setItem('hi_user', JSON.stringify({ username: data.username, displayName: data.displayName, role: data.role }));
+    window.location.href = data.role === 'master' ? '/master.html' : '/player.html';
+  } catch { showErr('l-err', 'Erro de conexão'); }
+}
+
+async function doSetup() {
+  hideErr('s-err');
+  const displayName = document.getElementById('s-display').value.trim();
+  const username = document.getElementById('s-user').value.trim();
+  const password = document.getElementById('s-pass').value;
+  const password2 = document.getElementById('s-pass2').value;
+  if (!username || !password) return showErr('s-err', 'Preencha todos os campos');
+  if (password !== password2) return showErr('s-err', 'Senhas não coincidem');
+  try {
+    const res = await fetch('/api/setup', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password, displayName })
+    });
+    const data = await res.json();
+    if (!res.ok) return showErr('s-err', data.error);
+    toast('✅ Mestre criado! Faça login.');
+    showTab('login');
+    document.getElementById('setup-note').style.display = 'none';
+    document.getElementById('setup-tab').style.display = 'none';
+  } catch { showErr('s-err', 'Erro de conexão'); }
+}
+
+// Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('tab-login').style.display !== 'none') doLogin();
+    else doSetup();
+  }
+});
+
+// Check if already logged in
+const token = localStorage.getItem('hi_token');
+const user = JSON.parse(localStorage.getItem('hi_user') || 'null');
+if (token && user) {
+  window.location.href = user.role === 'master' ? '/master.html' : '/player.html';
+}
+
+// Check if setup needed
+(async () => {
+  try {
+    const res = await fetch('/api/setup');
+    const data = await res.json();
+    if (data.needsSetup) {
+      document.getElementById('setup-note').style.display = 'block';
+      document.getElementById('setup-tab').style.display = 'block';
+      showTab('setup');
+    }
+  } catch {}
+})();
+</script>
+</body>
+</html>

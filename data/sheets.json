@@ -1,0 +1,26 @@
+{
+  "mael_jogador": {
+    "name": "Mael",
+    "sex": "M",
+    "cls": "Cavaleiro",
+    "type": "O Estudioso",
+    "appearance": "",
+    "atq": "4",
+    "res": "5",
+    "sab": "5",
+    "agi": "6",
+    "vitCur": 12,
+    "vonCur": 12,
+    "eq1": "Escudos Duplos",
+    "eq2": "",
+    "power1": "Escudo de Força 2",
+    "power2": "Bônus Situacional 2 (vigor físico)",
+    "power3": "",
+    "xpTotal": "",
+    "xpSpent": "",
+    "notes": "",
+    "avatar": "",
+    "username": "mael_jogador",
+    "updatedAt": "2026-06-24T21:16:44.136Z"
+  }
+}
