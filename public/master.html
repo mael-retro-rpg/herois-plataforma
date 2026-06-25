@@ -253,9 +253,43 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         <div class="msg-system">[ Aguardando conexão dos jogadores... ]</div>
       </div>
       <div id="narrate-area">
+        <div id="dice-expanded" style="display:none;flex-direction:column;gap:6px;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px">
+          <!-- Custom dice row -->
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);width:60px">🎲 CUSTOM</span>
+            <input id="dice-qty"   type="number" min="1" max="20"   value="2" style="width:44px;background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.8rem;text-align:center;padding:3px 4px;outline:none" title="Quantidade"/>
+            <span style="color:var(--muted);font-size:.7rem">d</span>
+            <input id="dice-faces" type="number" min="2" max="1000" value="6" style="width:44px;background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.8rem;text-align:center;padding:3px 4px;outline:none" title="Faces"/>
+            <span style="color:var(--muted);font-size:.7rem">+</span>
+            <input id="dice-bonus" type="number" value="0" style="width:44px;background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.8rem;text-align:center;padding:3px 4px;outline:none" title="Bônus/Penalidade"/>
+            <button onclick="rollCustomMaster()" style="font-family:var(--font-d);font-size:.55rem;letter-spacing:1px;padding:4px 10px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">ROLAR</button>
+          </div>
+          <!-- Difficulty row -->
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);width:60px">🎯 TESTE</span>
+            <input id="diff-label" type="text" placeholder="Nome do teste" style="flex:1;min-width:100px;background:var(--card);border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);font-size:.75rem;padding:3px 6px;outline:none"/>
+            <select id="diff-value" style="background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.75rem;padding:3px 6px;outline:none">
+              <option value="">— dificuldade —</option>
+              <option value="6">6 — Fácil</option>
+              <option value="8">8 — Médio</option>
+              <option value="10">10 — Difícil</option>
+              <option value="12">12 — Desafiador</option>
+              <option value="14">14 — Formidável</option>
+              <option value="16">16 — Heroico</option>
+              <option value="18">18 — Lendário</option>
+              <option value="20">20 — Quase Impossível</option>
+              <option value="22">22 — Praticamente Impossível</option>
+            </select>
+            <button onclick="setDifficulty()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:4px 8px;border:1px solid var(--accent2);background:transparent;color:var(--accent2);cursor:pointer">DEFINIR</button>
+            <button onclick="clearDifficulty()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:4px 8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">✕</button>
+          </div>
+          <!-- Active difficulty display -->
+          <div id="active-diff" style="display:none;font-family:var(--font-m);font-size:.62rem;color:var(--accent);padding:4px 8px;background:rgba(200,240,58,.06);border:1px solid var(--accent)"></div>
+        </div>
         <div class="dice-row">
-          <span class="dice-label">🎲 ROLAR MESTRE:</span>
-          <button class="free-roll-btn" onclick="rollFree()">2d6 livre</button>
+          <span class="dice-label">🎲 ROLAR:</span>
+          <button class="free-roll-btn" onclick="rollFree()">2d6</button>
+          <button class="toggle-dice-btn" id="toggle-dice-btn" onclick="toggleDicePanel()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:3px 8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">+ dados ▾</button>
         </div>
         <div class="narrate-row">
           <span style="font-family:var(--font-m);color:var(--accent);font-size:.9rem;flex-shrink:0">✦</span>
@@ -788,7 +822,47 @@ function sendNarrate() {
   socket.emit('narrate', { content });
 }
 
-function rollFree() { socket.emit('roll', { attr: 0, attrName: 'Livre' }); }
+function rollFree() { socket.emit('roll', { attr: 0, attrName: '' }); }
+
+function rollCustomMaster() {
+  const qty   = parseInt(document.getElementById('dice-qty').value)   || 1;
+  const faces = parseInt(document.getElementById('dice-faces').value) || 6;
+  const bonus = parseInt(document.getElementById('dice-bonus').value) || 0;
+  const diffVal = parseInt(document.getElementById('diff-value').value) || 0;
+  socket.emit('roll_custom', { qty, faces, bonus, difficulty: diffVal });
+}
+
+function toggleDicePanel() {
+  const panel = document.getElementById('dice-expanded');
+  const btn   = document.getElementById('toggle-dice-btn');
+  const open  = panel.style.display === 'flex';
+  panel.style.display = open ? 'none' : 'flex';
+  panel.style.flexDirection = 'column';
+  btn.textContent = open ? '+ dados ▾' : '+ dados ▴';
+  btn.style.color = open ? 'var(--muted)' : 'var(--accent2)';
+  btn.style.borderColor = open ? 'var(--border2)' : 'var(--accent2)';
+}
+
+function setDifficulty() {
+  const label = document.getElementById('diff-label').value.trim() || 'Teste';
+  const value = document.getElementById('diff-value').value;
+  if (!value) { toast('Escolha uma dificuldade'); return; }
+  socket.emit('difficulty_set', { label, value: parseInt(value) });
+  const SCALE = {6:'Fácil',8:'Médio',10:'Difícil',12:'Desafiador',14:'Formidável',16:'Heroico',18:'Lendário',20:'Quase Impossível',22:'Praticamente Impossível'};
+  const ad = document.getElementById('active-diff');
+  ad.textContent = `🎯 ATIVO: ${label} · Dificuldade ${value} (${SCALE[value]||''})`;
+  ad.style.display = 'block';
+  toast(`✅ Teste "${label}" definido — dificuldade ${value}`);
+}
+
+function clearDifficulty() {
+  socket.emit('difficulty_set', null);
+  document.getElementById('active-diff').style.display = 'none';
+  document.getElementById('diff-label').value = '';
+  document.getElementById('diff-value').value = '';
+  toast('Teste removido');
+}
+
 function sendChat() {
   const inp = document.getElementById('chat-inp');
   const content = inp.value.trim(); if (!content) return;
@@ -834,15 +908,29 @@ function renderMessage(msg) {
   } else if (msg.type === 'action') {
     el.className = 'msg-action';
     el.innerHTML = `<div class="act-author">${msg.author}:</div>${inlineMd(msg.content)}`;
-  } else if (msg.type === 'roll') {
+  } else if (msg.type === 'roll' || msg.type === 'roll_custom') {
     const cls = msg.isCritical?'critical':msg.isFumble?'fumble':'';
     el.className = `msg-roll ${cls}`;
     const tag = msg.isCritical?'<span class="roll-tag">🌟 ACERTO DECISIVO</span>'
                :msg.isFumble ?'<span class="roll-tag">💀 FALHA CRÍTICA</span>':'';
-    const attrLabel = msg.attrName && msg.attr ? `+ ${msg.attr} (${msg.attrName})` : msg.attr ? `+ ${msg.attr}` : '';
-    el.innerHTML = `
-      <div class="roll-author">${msg.author} rolou ${msg.attrName||'2d6'}</div>
-      <span class="roll-dice">[${msg.d1}] + [${msg.d2}]</span> ${attrLabel} = <span class="roll-total">${msg.total}</span>${tag}`;
+    let diceLabel, body;
+    if (msg.type === 'roll_custom') {
+      diceLabel = `${msg.qty}d${msg.faces}`;
+      const bonusStr = msg.bonus > 0 ? ` + ${msg.bonus}` : msg.bonus < 0 ? ` ${msg.bonus}` : '';
+      body = `<span class="roll-dice">${msg.rolls?.join(' + ')||'?'}</span>${bonusStr} = <span class="roll-total">${msg.total}</span>`;
+    } else {
+      diceLabel = msg.attrName ? `${msg.attrName}` : '2d6';
+      const attrLabel = msg.attr ? ` + ${msg.attr}` : '';
+      body = `<span class="roll-dice">[${msg.d1}] + [${msg.d2}]</span>${attrLabel} = <span class="roll-total">${msg.total}</span>`;
+    }
+    let diffResult = '';
+    if (msg.difficulty) {
+      const success = msg.total >= msg.difficulty;
+      diffResult = success
+        ? `<span style="color:var(--hp);margin-left:8px">✅ SUCESSO vs ${msg.difficulty}</span>`
+        : `<span style="color:var(--accent3);margin-left:8px">❌ FALHA vs ${msg.difficulty}</span>`;
+    }
+    el.innerHTML = `<div class="roll-author">${msg.author} rolou ${diceLabel}</div>${body}${tag}${diffResult}`;
   } else if (msg.type === 'system') {
     el.className = 'msg-system'; el.textContent = msg.content;
   }

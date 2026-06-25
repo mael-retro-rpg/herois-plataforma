@@ -142,6 +142,45 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* Sheet upload modal */
 #sheet-modal .modal-box { gap: 12px; }
+
+/* DIFFICULTY BANNER */
+#difficulty-banner {
+  display: none; background: rgba(200,240,58,.08); border-bottom: 1px solid var(--accent);
+  padding: 6px 14px; font-family: var(--font-d); font-size: .62rem; letter-spacing: 1px;
+  color: var(--accent); align-items: center; gap: 10px; flex-shrink: 0;
+}
+#difficulty-banner.show { display: flex; }
+#difficulty-banner .diff-name { color: var(--text); }
+#difficulty-banner .diff-val  { font-size: .9rem; color: var(--accent); }
+
+/* EXPANDED DICE PANEL */
+#dice-expanded {
+  display: none; border-top: 1px solid var(--border);
+  background: var(--panel); padding: 8px 14px; flex-shrink: 0;
+  flex-direction: column; gap: 6px;
+}
+#dice-expanded.show { display: flex; }
+.dice-exp-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.dice-exp-label { font-family: var(--font-d); font-size: .5rem; letter-spacing: 1px; color: var(--muted); width: 60px; flex-shrink: 0; }
+.dice-inp {
+  width: 48px; background: var(--card); border: 1px solid var(--border2); outline: none;
+  color: var(--accent); font-family: var(--font-m); font-size: .8rem; text-align: center;
+  padding: 3px 6px; caret-color: var(--accent);
+}
+.dice-inp:focus { border-color: var(--accent2); }
+.dice-sep { font-size: .7rem; color: var(--muted); }
+.roll-custom-btn {
+  font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px;
+  padding: 4px 10px; border: 1px solid var(--accent); background: transparent;
+  color: var(--accent); cursor: pointer; transition: .2s;
+}
+.roll-custom-btn:hover { background: var(--accent); color: var(--bg); }
+.toggle-dice-btn {
+  font-family: var(--font-d); font-size: .52rem; letter-spacing: 1px;
+  padding: 3px 8px; border: 1px solid var(--border2); background: transparent;
+  color: var(--muted); cursor: pointer; transition: .2s;
+}
+.toggle-dice-btn:hover, .toggle-dice-btn.open { border-color: var(--accent2); color: var(--accent2); }
 </style>
 </head>
 <body>
@@ -171,14 +210,31 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
   <!-- NARRATIVE -->
   <div id="narrative">
+    <div id="difficulty-banner">
+      🎯 TESTE ATIVO: <span class="diff-name" id="diff-name">—</span>
+      &nbsp;·&nbsp; Dificuldade: <span class="diff-val" id="diff-val">—</span>
+      &nbsp;·&nbsp; <span style="color:var(--muted);font-size:.55rem" id="diff-scale">—</span>
+    </div>
     <div id="log">
       <div class="msg msg-system">[ Conectando à sessão... ]</div>
+    </div>
+    <div id="dice-expanded">
+      <div class="dice-exp-row">
+        <span class="dice-exp-label">🎲 CUSTOM</span>
+        <input class="dice-inp" id="dice-qty" type="number" min="1" max="20" value="2" title="Quantidade de dados"/>
+        <span class="dice-sep">d</span>
+        <input class="dice-inp" id="dice-faces" type="number" min="2" max="1000" value="6" title="Faces do dado"/>
+        <span class="dice-sep">+</span>
+        <input class="dice-inp" id="dice-bonus" type="number" value="0" title="Bônus/Penalidade"/>
+        <button class="roll-custom-btn" onclick="rollCustom()">ROLAR</button>
+      </div>
     </div>
     <div id="input-area">
       <div class="dice-row">
         <span class="dice-label">🎲 ROLAR:</span>
         <div id="attr-btns"></div>
-        <button class="free-roll-btn" onclick="rollFree()">2d6 livre</button>
+        <button class="free-roll-btn" onclick="rollFree()">2d6</button>
+        <button class="toggle-dice-btn" id="toggle-dice-btn" onclick="toggleDicePanel()">+ dados ▾</button>
       </div>
       <div class="input-row">
         <span style="font-family:var(--font-m);color:var(--accent);font-size:.9rem;flex-shrink:0">&gt;</span>
@@ -309,6 +365,19 @@ socket.on('users_online', list => renderOnline(list));
 socket.on('show_intro', ({ text }) => {
   document.getElementById('intro-popup-body').innerHTML = mdToHtml(text);
   document.getElementById('intro-popup').style.display = 'flex';
+});
+
+socket.on('difficulty_set', (data) => {
+  const banner = document.getElementById('difficulty-banner');
+  if (!data || !data.value) {
+    banner.classList.remove('show');
+    return;
+  }
+  const SCALE = {6:'Fácil',8:'Médio',10:'Difícil',12:'Desafiador',14:'Formidável',16:'Heroico',18:'Lendário',20:'Quase Impossível',22:'Praticamente Impossível'};
+  document.getElementById('diff-name').textContent = data.label || 'Teste';
+  document.getElementById('diff-val').textContent = data.value;
+  document.getElementById('diff-scale').textContent = SCALE[data.value] || '';
+  banner.classList.add('show');
 });
 
 // ── SHARED SHEET BUILDER ─────────────────────────────────────────
@@ -459,11 +528,25 @@ function buildAttrBtns() {
 }
 
 // ── DICE ─────────────────────────────────────────────────────────
-function rollAttr(attrName, attr) {
-  socket.emit('roll', { attr, attrName });
+function rollAttr(attrName, attr) { socket.emit('roll', { attr, attrName }); }
+
+function rollFree() { socket.emit('roll', { attr: 0, attrName: '' }); }
+
+function rollCustom() {
+  const qty   = parseInt(document.getElementById('dice-qty').value)   || 1;
+  const faces = parseInt(document.getElementById('dice-faces').value) || 6;
+  const bonus = parseInt(document.getElementById('dice-bonus').value) || 0;
+  // Get active difficulty if any
+  const diffVal = parseInt(document.getElementById('diff-val').textContent) || 0;
+  socket.emit('roll_custom', { qty, faces, bonus, difficulty: diffVal });
 }
-function rollFree() {
-  socket.emit('roll', { attr: 0, attrName: 'Livre' });
+
+function toggleDicePanel() {
+  const panel = document.getElementById('dice-expanded');
+  const btn   = document.getElementById('toggle-dice-btn');
+  const open  = panel.classList.toggle('show');
+  btn.classList.toggle('open', open);
+  btn.textContent = open ? '+ dados ▴' : '+ dados ▾';
 }
 
 // ── ACTIONS ──────────────────────────────────────────────────────
@@ -522,15 +605,35 @@ function renderMessage(msg) {
   } else if (msg.type === 'action') {
     el.className = 'msg msg-action';
     el.innerHTML = `<div class="act-author">${msg.author}:</div>${inlineMd(msg.content)}`;
-  } else if (msg.type === 'roll') {
+  } else if (msg.type === 'roll' || msg.type === 'roll_custom') {
     const cls = msg.isCritical ? 'critical' : msg.isFumble ? 'fumble' : '';
     el.className = `msg msg-roll ${cls}`;
     const tag = msg.isCritical ? '<span class="roll-tag">🌟 ACERTO DECISIVO</span>'
                 : msg.isFumble  ? '<span class="roll-tag">💀 FALHA CRÍTICA</span>' : '';
-    const attrLabel = msg.attrName && msg.attr ? `+ ${msg.attr} (${msg.attrName})` : msg.attr ? `+ ${msg.attr}` : '';
+    let diceLabel, attrLabel = '';
+    if (msg.type === 'roll_custom') {
+      diceLabel = `${msg.qty}d${msg.faces}`;
+      if (msg.bonus > 0)  attrLabel = ` + ${msg.bonus} (bônus)`;
+      if (msg.bonus < 0)  attrLabel = ` ${msg.bonus} (penalidade)`;
+    } else {
+      diceLabel = `[${msg.d1}] + [${msg.d2}]`;
+      if (msg.attrName && msg.attr) attrLabel = ` + ${msg.attr} (${msg.attrName})`;
+      else if (msg.attr) attrLabel = ` + ${msg.attr}`;
+    }
+    // Difficulty result
+    let diffResult = '';
+    if (msg.difficulty) {
+      const success = msg.total >= msg.difficulty;
+      diffResult = success
+        ? `<span style="color:var(--hp);margin-left:8px">✅ SUCESSO vs ${msg.difficulty}</span>`
+        : `<span style="color:var(--accent3);margin-left:8px">❌ FALHA vs ${msg.difficulty}</span>`;
+    }
+    const rollBody = msg.type === 'roll_custom'
+      ? `<span class="roll-dice">${msg.rolls?.join(' + ')||'?'}</span>${attrLabel} = <span class="roll-total">${msg.total}</span>`
+      : `<span class="roll-dice">${diceLabel}</span>${attrLabel} = <span class="roll-total">${msg.total}</span>`;
     el.innerHTML = `
-      <div class="roll-author">${msg.author} rolou ${msg.attrName||'2d6'}</div>
-      <span class="roll-dice">[${msg.d1}] + [${msg.d2}]</span> ${attrLabel} = <span class="roll-total">${msg.total}</span>${tag}`;
+      <div class="roll-author">${msg.author} rolou ${diceLabel}</div>
+      ${rollBody}${tag}${diffResult}`;
   } else if (msg.type === 'system') {
     el.className = 'msg msg-system';
     el.textContent = msg.content;
