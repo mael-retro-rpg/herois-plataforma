@@ -290,6 +290,12 @@ io.on('connection', (socket) => {
   const sheets = readDB('sheets');
   socket.emit('sheets_load', Object.values(sheets));
 
+  // Send intro if set and user is a player
+  const sessions = readDB('sessions');
+  if (user.role !== 'master' && sessions.current?.intro) {
+    socket.emit('show_intro', { text: sessions.current.intro });
+  }
+
   console.log(`✅ ${user.displayName} (${user.role}) conectou`);
 
   // ── NARRATIVE MESSAGE (master only) ──
