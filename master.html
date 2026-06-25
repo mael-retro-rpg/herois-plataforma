@@ -364,13 +364,14 @@ function logout() {
   window.location.href = '/';
 }
 
-// Redirect if not authenticated — after functions are defined
 if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
-  throw new Error('Não autenticado');
+} else {
+  document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
+  initApp();
 }
 
-document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
+function initApp() {
 
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
@@ -934,6 +935,8 @@ document.getElementById('chat-inp').addEventListener('keydown', e=>{ if(e.key===
 
 // ── TOAST ─────────────────────────────────────────────────────────
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
+
+} // end initApp
 </script>
 </body>
 </html>
