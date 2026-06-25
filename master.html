@@ -368,7 +368,16 @@ if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
-  initApp();
+  try {
+    initApp();
+  } catch(e) {
+    console.error('Erro ao inicializar:', e);
+    document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#ff5f7e;background:#0a0a0f;min-height:100vh">
+      <h2 style="color:#c8f03a;margin-bottom:16px">⚠ Erro de inicialização</h2>
+      <pre>${e.message}\n${e.stack}</pre>
+      <br><button onclick="logout()" style="padding:10px 20px;background:#ff5f7e;border:none;color:#000;cursor:pointer;font-weight:bold">Sair</button>
+    </div>`;
+  }
 }
 
 function initApp() {
