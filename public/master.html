@@ -368,19 +368,73 @@ if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
-  try {
-    initApp();
-  } catch(e) {
-    console.error('Erro ao inicializar:', e);
-    document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#ff5f7e;background:#0a0a0f;min-height:100vh">
-      <h2 style="color:#c8f03a;margin-bottom:16px">⚠ Erro de inicialização</h2>
-      <pre>${e.message}\n${e.stack}</pre>
-      <br><button onclick="logout()" style="padding:10px 20px;background:#ff5f7e;border:none;color:#000;cursor:pointer;font-weight:bold">Sair</button>
-    </div>`;
-  }
 }
 
-function initApp() {
+// ── LOG TOOLS — escopo global (chamadas por onclick) ─────────────
+function clearLog() {
+  if (!confirm('Limpar o log visível? O histórico salvo no servidor não é apagado.')) return;
+  document.getElementById('log').innerHTML = '<div class="msg-system">[ Log limpo pelo Mestre ]</div>';
+}
+
+function saveLog() {
+  const msgs = document.querySelectorAll('#log > *');
+  const lines = [];
+  const now = new Date().toLocaleString('pt-BR');
+  lines.push(`=== LOG DA SESSÃO — ${now} ===\n`);
+  msgs.forEach(el => {
+    const text = el.innerText || el.textContent;
+    if (text.trim()) lines.push(text.trim());
+  });
+  const blob = new Blob([lines.join('\n\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sessao_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 Log salvo!');
+}
+
+function openIntroModal() {
+  fetch('/api/session', { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(s => {
+      document.getElementById('intro-text').value = s.intro || '';
+      document.getElementById('intro-status').textContent = s.intro
+        ? '✅ Abertura ativa — jogadores verão ao entrar'
+        : 'Nenhuma abertura definida';
+    }).catch(() => {});
+  document.getElementById('intro-modal').classList.add('open');
+}
+
+async function saveIntro() {
+  const text = document.getElementById('intro-text').value.trim();
+  if (!text) { toast('Digite o texto de abertura'); return; }
+  try {
+    const res = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ intro: text })
+    });
+    if (!res.ok) throw new Error();
+    document.getElementById('intro-status').textContent = '✅ Abertura ativa — jogadores verão ao entrar';
+    toast('✅ Abertura salva!');
+  } catch { toast('Erro ao salvar'); }
+}
+
+async function clearIntro() {
+  if (!confirm('Remover a narração de abertura?')) return;
+  try {
+    await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ intro: '' })
+    });
+    document.getElementById('intro-text').value = '';
+    document.getElementById('intro-status').textContent = 'Nenhuma abertura definida';
+    toast('Abertura removida');
+  } catch { toast('Erro'); }
+}
 
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
@@ -725,76 +779,6 @@ async function confirmAddSheet() {
   } catch(e) { toast('Erro: ' + e.message); }
 }
 
-// ── LOG TOOLS ────────────────────────────────────────────────────
-function clearLog() {
-  if (!confirm('Limpar o log visível? O histórico salvo no servidor não é apagado.')) return;
-  document.getElementById('log').innerHTML = '<div class="msg-system">[ Log limpo pelo Mestre ]</div>';
-}
-
-function saveLog() {
-  const msgs = document.querySelectorAll('#log > *');
-  const lines = [];
-  const now = new Date().toLocaleString('pt-BR');
-  lines.push(`=== LOG DA SESSÃO — ${now} ===\n`);
-  msgs.forEach(el => {
-    const text = el.innerText || el.textContent;
-    if (text.trim()) lines.push(text.trim());
-  });
-  const blob = new Blob([lines.join('\n\n')], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `sessao_${new Date().toISOString().slice(0,10)}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('💾 Log salvo!');
-}
-
-// ── INTRO ADVENTURE ──────────────────────────────────────────────
-function openIntroModal() {
-  // Load current intro from server session data
-  fetch('/api/session', { headers: { 'Authorization': `Bearer ${token}` } })
-    .then(r => r.json())
-    .then(s => {
-      document.getElementById('intro-text').value = s.intro || '';
-      const status = document.getElementById('intro-status');
-      status.textContent = s.intro
-        ? '✅ Abertura ativa — jogadores verão ao entrar'
-        : 'Nenhuma abertura definida';
-    }).catch(() => {});
-  document.getElementById('intro-modal').classList.add('open');
-}
-
-async function saveIntro() {
-  const text = document.getElementById('intro-text').value.trim();
-  if (!text) { toast('Digite o texto de abertura'); return; }
-  try {
-    const res = await fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ intro: text })
-    });
-    if (!res.ok) throw new Error();
-    document.getElementById('intro-status').textContent = '✅ Abertura ativa — jogadores verão ao entrar';
-    document.getElementById('intro-modal').querySelector('.stb-btn')?.classList.add('active');
-    toast('✅ Abertura salva!');
-  } catch { toast('Erro ao salvar'); }
-}
-
-async function clearIntro() {
-  if (!confirm('Remover a narração de abertura?')) return;
-  try {
-    await fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ intro: '' })
-    });
-    document.getElementById('intro-text').value = '';
-    document.getElementById('intro-status').textContent = 'Nenhuma abertura definida';
-    toast('Abertura removida');
-  } catch { toast('Erro'); }
-}
-
 // ── NARRATIVE ─────────────────────────────────────────────────────
 function sendNarrate() {
   const inp = document.getElementById('narrate-inp');
@@ -944,8 +928,6 @@ document.getElementById('chat-inp').addEventListener('keydown', e=>{ if(e.key===
 
 // ── TOAST ─────────────────────────────────────────────────────────
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
-
-} // end initApp
 </script>
 </body>
 </html>

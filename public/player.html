@@ -256,10 +256,7 @@ if (!token || !me || me.role === 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName;
-  initApp();
 }
-
-function initApp() {
 
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
@@ -639,8 +636,6 @@ function toast(msg, dur=2500) {
   el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), dur);
 }
-
-} // end initApp
 </script>
 </body>
 </html>
