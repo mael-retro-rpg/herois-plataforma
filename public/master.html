@@ -221,6 +221,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
     <span style="font-family:var(--font-m);font-size:.68rem;color:var(--muted)" id="user-label">—</span>
+    <button class="btn btn-muted sm" onclick="openChangePasswordModal()">🔑 Senha</button>
     <button class="btn btn-danger sm" onclick="logout()">Sair</button>
   </div>
 </div>
@@ -325,7 +326,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         <div class="field"><label>Usuário</label><input class="inp" id="nu-user" type="text" placeholder="jogador1"/></div>
       </div>
       <div class="form-row">
-        <div class="field"><label>Senha</label><input class="inp" id="nu-pass" type="password" placeholder="••••••••"/></div>
+        <div class="field"><label>Senha</label><input class="inp" id="nu-pass" type="password" value="12345" placeholder="12345"/></div>
         <div class="field"><label>Função</label>
           <select class="inp" id="nu-role">
             <option value="player">Jogador</option>
@@ -385,6 +386,25 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
       <button class="btn btn-danger" onclick="clearIntro()" title="Remover abertura — jogadores não verão mais o popup">✕ Remover</button>
     </div>
     <div id="intro-status" style="font-family:var(--font-m);font-size:.62rem;color:var(--muted)"></div>
+  </div>
+</div>
+
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="change-password-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🔑 Alterar Senha</div>
+      <button class="modal-close" onclick="closeModal('change-password-modal')">✕</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
+      Altere sua senha de acesso. A senha inicial padrão para novos usuários é <strong style="color:var(--accent)">12345</strong>.
+    </p>
+    <div class="field"><label>Senha atual</label><input class="inp" id="cp-old" type="password" autocomplete="current-password" placeholder="Senha atual"/></div>
+    <div class="field"><label>Nova senha</label><input class="inp" id="cp-new" type="password" autocomplete="new-password" placeholder="Nova senha"/></div>
+    <div class="field"><label>Confirmar nova senha</label><input class="inp" id="cp-confirm" type="password" autocomplete="new-password" placeholder="Repita a nova senha"/></div>
+    <div class="error" id="cp-err" style="display:none;font-family:var(--font-m);font-size:.68rem;color:var(--accent3);padding:6px;border:1px solid var(--accent3)"></div>
+    <button class="btn btn-accent full" onclick="changePassword()">✓ Salvar nova senha</button>
   </div>
 </div>
 
@@ -542,10 +562,36 @@ function calcDerived(s){
   };
 }
 
-function formatBonus(v) {
-  const n = Number(v ?? 0);
-  if (!Number.isFinite(n)) return '+0';
-  return n >= 0 ? `+${n}` : `${n}`;
+
+function firstSheetValue(s, keys, fallback = '—') {
+  for (const key of keys) {
+    const value = s?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+  }
+  return fallback;
+}
+
+function formatBonus(value) {
+  if (value === undefined || value === null || String(value).trim() === '' || value === '—') return '—';
+  const str = String(value).trim();
+  const num = Number(str);
+  if (!Number.isNaN(num)) return num > 0 ? `+${num}` : `${num}`;
+  return /^[+-]/.test(str) ? str : str;
+}
+
+function getDamageValues(s) {
+  return {
+    fis: formatBonus(firstSheetValue(s, [
+      'danoFisico','danoFis','danoFisicoBonus','danoFisBonus','bonusDanoFisico','bonusDanoFis',
+      'dano_fisico','dano_fis','bonus_dano_fisico','bonus_dano_fis','bdFisico','bdFis',
+      'dmgFis','dmgPhys','physicalDamage','damagePhysical','physDamage','danoFísico','bonusDanoFísico'
+    ])),
+    mag: formatBonus(firstSheetValue(s, [
+      'danoMagico','danoMag','danoMagicoBonus','danoMagBonus','bonusDanoMagico','bonusDanoMag',
+      'dano_magico','dano_mag','bonus_dano_magico','bonus_dano_mag','bdMagico','bdMag',
+      'dmgMag','dmgMagic','magicDamage','damageMagic','magDamage','danoMágico','bonusDanoMágico'
+    ]))
+  };
 }
 
 function buildSheetPopupHTML(s){
@@ -555,6 +601,7 @@ function buildSheetPopupHTML(s){
   const hpPct = Math.max(0,Math.round(vit/d.vit*100));
   const wpPct = Math.max(0,Math.round(von/d.vontade*100));
   const powers = [s.power1,s.power2,s.power3].filter(Boolean);
+    const dmg = getDamageValues(s);
   const avatarHTML = s.avatar
     ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>`
     : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
@@ -596,16 +643,11 @@ function buildSheetPopupHTML(s){
       <div>
         <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Ficha de Combate</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
-          ${[['Iniciativa', d.ini], ['J. de Ataque', d.jAtq], ['Defesa', d.def], ['Res. Mágica', d.rmag], ['Dano Fís.', formatBonus(s.danoFisico)], ['Dano Mag.', formatBonus(s.danoMagico)]].map(([l,v])=>`
+          ${[['Iniciativa',d.ini],['J. de Ataque',d.jAtq],['Defesa',d.def],['Res. Mágica',d.rmag],['Dano Fís.',dmg.fis],['Dano Mag.',dmg.mag]].map(([l,v])=>`
           <div style="background:var(--card);border:1px solid var(--border);padding:5px 8px">
             <div style="font-size:.45rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${l}</div>
             <div style="font-family:var(--font-d);font-size:.82rem;color:var(--text);margin-top:1px">${v}</div>
           </div>`).join('')}
-          ${s.eq1 || s.eq2 ? `<div>
-          <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Equipamento</div>
-            ${s.eq1 ? `<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2);margin-bottom:3px">${s.eq1}</div>` : ''}
-            ${s.eq2 ? `<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2)">${s.eq2}</div>` : ''}
-          </div>` : ''}     
         </div>
       </div>
       ${s.eq1||s.eq2?`<div>
@@ -701,6 +743,7 @@ function renderPlayersTab() {
     const hpPct = Math.max(0,Math.round(vit/d.vit*100));
     const wpPct = Math.max(0,Math.round(von/d.vontade*100));
     const powers = [s.power1,s.power2,s.power3].filter(Boolean);
+    const dmg = getDamageValues(s);
     const avatarHTML = s.avatar
       ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block;border-bottom:1px solid var(--border2)"/>`
       : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3.5rem;background:var(--card);border-bottom:1px solid var(--border2)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
@@ -751,8 +794,8 @@ function renderPlayersTab() {
             <div class="sc-combat-stat"><div class="sc-combat-label">J. de Ataque</div><div class="sc-combat-val">${d.jAtq}</div></div>
             <div class="sc-combat-stat"><div class="sc-combat-label">Defesa</div><div class="sc-combat-val">${d.def}</div></div>
             <div class="sc-combat-stat"><div class="sc-combat-label">Res. Mágica</div><div class="sc-combat-val">${d.rmag}</div></div>
-            <div class="sc-combat-stat"><div class="sc-combat-label">Equip. 1</div><div class="sc-combat-val" style="font-size:.65rem;color:var(--accent2)">${s.eq1||'—'}</div></div>
-            <div class="sc-combat-stat"><div class="sc-combat-label">Equip. 2</div><div class="sc-combat-val" style="font-size:.65rem;color:var(--accent2)">${s.eq2||'—'}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">Dano Fís.</div><div class="sc-combat-val">${dmg.fis}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">Dano Mag.</div><div class="sc-combat-val">${dmg.mag}</div></div>
           </div>
         </div>
         ${powers.length?`<div>
@@ -1011,11 +1054,11 @@ async function loadUsers() {
 async function createUser() {
   const display = document.getElementById('nu-display').value.trim();
   const username = document.getElementById('nu-user').value.trim();
-  const password = document.getElementById('nu-pass').value;
+  const password = document.getElementById('nu-pass').value || '12345';
   const role = document.getElementById('nu-role').value;
   const errEl = document.getElementById('nu-err');
   errEl.style.display = 'none';
-  if (!username || !password) { errEl.textContent='Preencha usuário e senha'; errEl.style.display='block'; return; }
+  if (!username) { errEl.textContent='Preencha o usuário'; errEl.style.display='block'; return; }
   try {
     const res = await fetch('/api/users', {
       method: 'POST',
@@ -1027,7 +1070,7 @@ async function createUser() {
     toast(`✅ ${username} criado!`);
     document.getElementById('nu-display').value='';
     document.getElementById('nu-user').value='';
-    document.getElementById('nu-pass').value='';
+    document.getElementById('nu-pass').value='12345';
     loadUsers();
   } catch { toast('Erro ao criar usuário'); }
 }
@@ -1057,6 +1100,65 @@ document.getElementById('narrate-inp').addEventListener('keydown', e=>{ if(e.key
 document.getElementById('chat-inp').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
 
 // ── TOAST ─────────────────────────────────────────────────────────
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+function openChangePasswordModal() {
+  ['cp-old','cp-new','cp-confirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const errEl = document.getElementById('cp-err');
+  if (errEl) errEl.style.display = 'none';
+  document.getElementById('change-password-modal').classList.add('open');
+}
+
+async function changePassword() {
+  const oldPassword = document.getElementById('cp-old').value;
+  const newPassword = document.getElementById('cp-new').value;
+  const confirmPassword = document.getElementById('cp-confirm').value;
+  const errEl = document.getElementById('cp-err');
+  errEl.style.display = 'none';
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    errEl.textContent = 'Preencha todos os campos.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPassword.length < 5) {
+    errEl.textContent = 'A nova senha deve ter pelo menos 5 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    errEl.textContent = 'A confirmação não confere com a nova senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ oldPassword, newPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Erro ao alterar senha.';
+      errEl.style.display = 'block';
+      return;
+    }
+    closeModal('change-password-modal');
+    toast('✅ Senha alterada!');
+  } catch {
+    errEl.textContent = 'Erro de conexão ao alterar senha.';
+    errEl.style.display = 'block';
+  }
+}
+
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
 </script>
 </body>
