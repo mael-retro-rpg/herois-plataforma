@@ -246,13 +246,20 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
-if (!token || !me || me.role === 'master') { window.location.href = '/'; }
-document.getElementById('user-label').textContent = me.displayName;
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
   window.location.href = '/';
 }
+
+if (!token || !me || me.role === 'master') {
+  window.location.href = '/';
+} else {
+  document.getElementById('user-label').textContent = me.displayName;
+  initApp();
+}
+
+function initApp() {
 
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
@@ -260,8 +267,16 @@ let sheets = {}; // username -> sheet
 let pendingSheet = null;
 
 socket.on('connect', () => appendSystem('[ Conectado à sessão ]'));
-socket.on('disconnect', () => appendSystem('[ Desconectado ]'));
-socket.on('connect_error', e => appendSystem(`[ Erro: ${e.message} ]`));
+socket.on('disconnect', () => appendSystem('[ Desconectado — tentando reconectar... ]'));
+socket.on('connect_error', e => {
+  if (e.message === 'Token inválido' || e.message === 'Token ausente') {
+    localStorage.removeItem('hi_token');
+    localStorage.removeItem('hi_user');
+    window.location.href = '/';
+  } else {
+    appendSystem(`[ Erro de conexão: ${e.message} ]`);
+  }
+});
 
 socket.on('history_load', msgs => {
   document.getElementById('log').innerHTML = '';
@@ -624,6 +639,8 @@ function toast(msg, dur=2500) {
   el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), dur);
 }
+
+} // end initApp
 </script>
 </body>
 </html>

@@ -358,20 +358,46 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
-if (!token || !me || me.role !== 'master') { window.location.href = '/'; }
-document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
   window.location.href = '/';
 }
 
+if (!token || !me || me.role !== 'master') {
+  window.location.href = '/';
+} else {
+  document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
+  try {
+    initApp();
+  } catch(e) {
+    console.error('Erro ao inicializar:', e);
+    document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#ff5f7e;background:#0a0a0f;min-height:100vh">
+      <h2 style="color:#c8f03a;margin-bottom:16px">⚠ Erro de inicialização</h2>
+      <pre>${e.message}\n${e.stack}</pre>
+      <br><button onclick="logout()" style="padding:10px 20px;background:#ff5f7e;border:none;color:#000;cursor:pointer;font-weight:bold">Sair</button>
+    </div>`;
+  }
+}
+
+function initApp() {
+
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
 let sheets = {};
 
 socket.on('connect', () => appendSystem('[ Conectado ]'));
-socket.on('disconnect', () => appendSystem('[ Desconectado ]'));
+socket.on('disconnect', () => appendSystem('[ Desconectado — tentando reconectar... ]'));
+socket.on('connect_error', e => {
+  // Token inválido ou expirado — redireciona para login
+  if (e.message === 'Token inválido' || e.message === 'Token ausente') {
+    localStorage.removeItem('hi_token');
+    localStorage.removeItem('hi_user');
+    window.location.href = '/';
+  } else {
+    appendSystem(`[ Erro de conexão: ${e.message} ]`);
+  }
+});
 
 socket.on('history_load', msgs => {
   document.getElementById('log').innerHTML = '';
@@ -768,6 +794,9 @@ async function clearIntro() {
     toast('Abertura removida');
   } catch { toast('Erro'); }
 }
+
+// ── NARRATIVE ─────────────────────────────────────────────────────
+function sendNarrate() {
   const inp = document.getElementById('narrate-inp');
   const content = inp.value.trim();
   if (!content) return;
@@ -915,6 +944,8 @@ document.getElementById('chat-inp').addEventListener('keydown', e=>{ if(e.key===
 
 // ── TOAST ─────────────────────────────────────────────────────────
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
+
+} // end initApp
 </script>
 </body>
 </html>
