@@ -542,6 +542,12 @@ function calcDerived(s){
   };
 }
 
+function formatBonus(v) {
+  const n = Number(v ?? 0);
+  if (!Number.isFinite(n)) return '+0';
+  return n >= 0 ? `+${n}` : `${n}`;
+}
+
 function buildSheetPopupHTML(s){
   const d = calcDerived(s);
   const vit  = s.vitCur ?? d.vit;

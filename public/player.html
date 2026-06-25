@@ -401,6 +401,12 @@ function calcDerived(s){
   return { ini:2+agi, jAtq:atq, def:4+res, rmag:4+sab, vit:10+Math.floor(res/2), vontade:10+Math.floor(sab/2) };
 }
 
+function formatBonus(v) {
+  const n = Number(v ?? 0);
+  if (!Number.isFinite(n)) return '+0';
+  return n >= 0 ? `+${n}` : `${n}`;
+}
+
 function buildSheetPopupHTML(s){
   const d = calcDerived(s);
   const vit = s.vitCur ?? d.vit;
