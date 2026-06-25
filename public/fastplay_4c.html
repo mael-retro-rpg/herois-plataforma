@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fastplay — Sistema 4C · Heróis Improváveis</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--panel:#10101a;--card:#13131f;--border:#1e1e32;--border2:#2a2a44;
+  --accent:#c8f03a;--accent2:#6b5fff;--accent3:#ff5f7e;--hp:#3affc8;--wp:#c87bff;
+  --text:#cccce0;--muted:#55556a;
+  --font-d:'Orbitron',monospace;--font-b:'Inter',sans-serif;--font-m:'Share Tech Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font-b);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* HEADER */
+#header{background:var(--panel);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+#header h1{font-family:var(--font-d);font-size:.9rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;}
+#header .sub{font-size:.55rem;color:var(--muted);letter-spacing:2px;margin-top:2px;}
+
+/* TABS */
+#tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--panel);padding:0 24px;overflow-x:auto;position:sticky;top:53px;z-index:99;}
+.tab{font-family:var(--font-d);font-size:.6rem;letter-spacing:2px;color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;text-transform:uppercase;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* CONTENT */
+#content{max-width:860px;margin:0 auto;padding:32px 24px 60px;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* TYPOGRAPHY */
+h2{font-family:var(--font-d);font-size:1rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid var(--border2);}
+h3{font-family:var(--font-d);font-size:.75rem;letter-spacing:2px;color:var(--accent2);text-transform:uppercase;margin:24px 0 10px;}
+h4{font-family:var(--font-d);font-size:.65rem;letter-spacing:1px;color:var(--text);margin:16px 0 6px;}
+p{font-size:.85rem;line-height:1.75;color:var(--text);margin-bottom:10px;}
+ul,ol{padding-left:20px;margin-bottom:12px;}
+li{font-size:.83rem;line-height:1.7;color:var(--text);margin-bottom:4px;}
+strong{color:var(--accent);font-weight:600;}
+em{color:#aaaacc;font-style:italic;}
+code{font-family:var(--font-m);color:var(--accent2);font-size:.82em;background:rgba(107,95,255,.1);padding:1px 5px;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border2);padding:16px;margin-bottom:12px;}
+.card-title{font-family:var(--font-d);font-size:.75rem;letter-spacing:1px;color:var(--accent);margin-bottom:8px;}
+.card-sub{font-size:.65rem;color:var(--accent2);letter-spacing:1px;margin-bottom:8px;}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:600px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr;}}
+
+/* STAT BLOCK */
+.stat-block{background:var(--panel);border:1px solid var(--border);padding:8px 12px;text-align:center;}
+.stat-label{font-size:.55rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.stat-val{font-family:var(--font-d);font-size:1.1rem;color:var(--accent);margin-top:2px;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:.78rem;}
+th{font-family:var(--font-d);font-size:.58rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border2);text-align:left;}
+td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.7rem;letter-spacing:1px;}
+
+/* HIGHLIGHT BOX */
+.box{border-left:3px solid var(--accent);background:rgba(200,240,58,.04);padding:12px 16px;margin:16px 0;font-size:.82rem;line-height:1.7;}
+.box.blue{border-color:var(--accent2);background:rgba(107,95,255,.05);}
+.box.red{border-color:var(--accent3);background:rgba(255,95,126,.05);}
+.box.purple{border-color:var(--wp);background:rgba(200,123,255,.05);}
+
+/* DIFFICULTY TABLE */
+.diff-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);}
+.diff-row:last-child{border-bottom:none;}
+.diff-name{font-family:var(--font-d);font-size:.65rem;letter-spacing:1px;color:var(--accent);width:160px;flex-shrink:0;}
+.diff-num{font-family:var(--font-m);font-size:.8rem;color:var(--text);width:30px;flex-shrink:0;}
+.diff-bar{flex:1;height:4px;background:var(--border);overflow:hidden;}
+.diff-fill{height:100%;background:var(--accent);transition:.3s;}
+.diff-ex{font-size:.68rem;color:var(--muted);flex:2;}
+
+/* CLASS CARD */
+.cls-card{background:var(--card);border:1px solid var(--border2);padding:14px;}
+.cls-emoji{font-size:1.6rem;margin-bottom:6px;display:block;}
+.cls-name{font-family:var(--font-d);font-size:.8rem;letter-spacing:1px;color:var(--accent);margin-bottom:4px;}
+.cls-attrs{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0;}
+.cls-attr{font-family:var(--font-m);font-size:.6rem;padding:2px 6px;border:1px solid var(--border2);color:var(--muted);}
+.cls-attr b{color:var(--text);}
+.cls-powers{font-size:.68rem;color:var(--wp);line-height:1.6;margin-top:8px;}
+.cls-equip{font-size:.65rem;color:var(--accent2);margin-top:4px;}
+
+/* TYPE CARD */
+.type-card{background:var(--card);border:1px solid var(--border2);padding:10px;}
+.type-name{font-family:var(--font-d);font-size:.68rem;letter-spacing:1px;color:var(--accent);margin-bottom:4px;}
+.type-desc{font-size:.65rem;color:var(--muted);line-height:1.4;margin-bottom:6px;}
+.type-attrs{font-family:var(--font-m);font-size:.6rem;color:var(--border2);}
+.type-attrs b{color:var(--text);}
+
+/* ROLL DISPLAY */
+.roll-ex{background:rgba(200,240,58,.05);border:1px solid var(--border2);padding:10px 14px;font-family:var(--font-m);font-size:.75rem;margin:10px 0;line-height:1.8;}
+.roll-ex .dice{color:var(--accent);font-size:.9rem;}
+.roll-ex .result-ok{color:var(--hp);}
+.roll-ex .result-fail{color:var(--accent3);}
+
+/* FICHA EXAMPLE */
+.ficha{background:var(--panel);border:1px solid var(--accent);padding:20px;}
+.ficha-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;}
+.ficha-name{font-family:var(--font-d);font-size:1rem;letter-spacing:2px;color:var(--accent);}
+.ficha-id{font-size:.65rem;color:var(--muted);margin-top:2px;}
+.ficha-section{font-family:var(--font-d);font-size:.55rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:12px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+.ficha-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
+.ficha-stat{background:var(--card);border:1px solid var(--border2);padding:6px;text-align:center;}
+.ficha-stat .fl{font-size:.5rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.ficha-stat .fv{font-family:var(--font-d);font-size:.9rem;color:var(--accent);margin-top:2px;}
+.ficha-grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.ficha-powers{font-size:.72rem;color:var(--wp);line-height:1.7;}
+.ficha-powers span{color:var(--border2);}
+
+/* COMBAT FLOW */
+.flow-step{display:flex;gap:14px;margin-bottom:16px;align-items:flex-start;}
+.flow-num{font-family:var(--font-d);font-size:1.2rem;color:var(--accent);opacity:.5;flex-shrink:0;width:28px;}
+.flow-body{flex:1;}
+.flow-title{font-family:var(--font-d);font-size:.7rem;letter-spacing:1px;color:var(--accent2);margin-bottom:4px;}
+.flow-text{font-size:.8rem;color:var(--text);line-height:1.6;}
+
+/* POWER TABLE */
+.power-row{padding:10px 0;border-bottom:1px solid var(--border);}
+.power-row:last-child{border-bottom:none;}
+.power-name{font-family:var(--font-d);font-size:.7rem;letter-spacing:1px;color:var(--wp);margin-bottom:4px;}
+.power-desc{font-size:.78rem;color:var(--text);line-height:1.6;}
+.power-cost{font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:3px;}
+
+/* XP TABLE */
+.xp-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
+.xp-row:last-child{border-bottom:none;}
+.xp-crit{color:var(--accent);}
+.xp-val{font-family:var(--font-m);color:var(--text);}
+
+/* BADGE */
+.badge{display:inline-block;font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;padding:2px 6px;border:1px solid;margin-left:6px;vertical-align:middle;}
+.badge.green{color:var(--hp);border-color:var(--hp);}
+.badge.purple{color:var(--wp);border-color:var(--wp);}
+.badge.yellow{color:var(--accent);border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>⚡ Fastplay — Sistema 4C</h1>
+    <div class="sub">HERÓIS IMPROVÁVEIS · GUIA RÁPIDO DE JOGO</div>
+  </div>
+</div>
+
+<div id="tabs">
+  <div class="tab active" onclick="showTab('regras')">📋 Regras</div>
+  <div class="tab" onclick="showTab('combate')">⚔️ Combate</div>
+  <div class="tab" onclick="showTab('poderes')">✨ Poderes</div>
+  <div class="tab" onclick="showTab('classes')">🎭 Classes</div>
+  <div class="tab" onclick="showTab('tipos')">🏫 Tipos</div>
+  <div class="tab" onclick="showTab('equipamentos')">🗡️ Equipamentos</div>
+  <div class="tab" onclick="showTab('ficha')">📄 Ficha Exemplo</div>
+  <div class="tab" onclick="showTab('xp')">⭐ Experiência</div>
+</div>
+
+<div id="content">
+
+<!-- ══════════════════════════════════════
+     REGRAS
+══════════════════════════════════════ -->
+<div class="section active" id="tab-regras">
+  <h2>Regras Básicas</h2>
+
+  <h3>O que você precisa</h3>
+  <p>Para jogar você precisa de <strong>dois dados de seis faces (2d6)</strong> e sua imaginação. O Sistema 4C foi feito para ser rápido e fluido — as regras servem à narrativa, não o contrário.</p>
+
+  <div class="box">
+    <strong>A Regra de Ouro:</strong> se uma regra estiver atrapalhando a diversão, ignore-a. A história sempre vem primeiro.
+  </div>
+
+  <h3>Atributos</h3>
+  <p>Todo personagem tem quatro atributos. Cada um determina o que seu personagem faz bem:</p>
+
+  <div class="grid4">
+    <div class="stat-block"><div class="stat-label">ATQ</div><div class="stat-val">⚔️</div><p style="font-size:.65rem;color:var(--muted);margin-top:4px;">Ataque, precisão e combate</p></div>
+    <div class="stat-block"><div class="stat-label">RES</div><div class="stat-val">🛡️</div><p style="font-size:.65rem;color:var(--muted);margin-top:4px;">Resistência, força e durabilidade</p></div>
+    <div class="stat-block"><div class="stat-label">SAB</div><div class="stat-val">✨</div><p style="font-size:.65rem;color:var(--muted);margin-top:4px;">Sabedoria, magia e percepção</p></div>
+    <div class="stat-block"><div class="stat-label">AGI</div><div class="stat-val">💨</div><p style="font-size:.65rem;color:var(--muted);margin-top:4px;">Agilidade, velocidade e reflexo</p></div>
+  </div>
+
+  <div class="box blue">
+    <strong>Atributos são flexíveis!</strong> Mais de um atributo pode resolver a mesma ação. Escalar uma parede pode ser RES (força), AGI (destreza) ou até SAB (improvisar uma técnica). O narrador decide qual faz mais sentido.
+  </div>
+
+  <h3>Derivados</h3>
+  <table>
+    <tr><th>Derivado</th><th>Fórmula</th><th>O que representa</th></tr>
+    <tr><td>Vitalidade</td><td><code>10 + (RES ÷ 2)</code></td><td>Pontos de vida — quanto dano aguenta</td></tr>
+    <tr><td>Vontade</td><td><code>10 + (SAB ÷ 2)</code></td><td>Energia mental — usada para poderes</td></tr>
+    <tr><td>Iniciativa</td><td><code>2 + AGI + bônus</code></td><td>Quem age primeiro no combate</td></tr>
+    <tr><td>J. de Ataque</td><td><code>ATQ + bônus arma</code></td><td>Modificador de ataque</td></tr>
+    <tr><td>Defesa</td><td><code>4 + RES + bônus armadura</code></td><td>Dificuldade para ser atingido</td></tr>
+    <tr><td>Res. Mágica</td><td><code>4 + SAB</code></td><td>Defesa contra magia e poderes mentais</td></tr>
+  </table>
+
+  <h3>Fazendo Testes</h3>
+  <p>Quando o resultado de uma ação é incerto e tem impacto na história, o narrador pede um teste:</p>
+
+  <div class="flow-step">
+    <div class="flow-num">1</div>
+    <div class="flow-body"><div class="flow-title">Role 2d6</div><div class="flow-text">Jogue dois dados de seis faces.</div></div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">2</div>
+    <div class="flow-body"><div class="flow-title">Some o atributo</div><div class="flow-text">Adicione o valor do atributo relevante ao resultado dos dados.</div></div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">3</div>
+    <div class="flow-body"><div class="flow-title">Compare com a dificuldade</div><div class="flow-text">Se o total for igual ou maior que a dificuldade, é um sucesso.</div></div>
+  </div>
+
+  <div class="roll-ex">
+    <div class="dice">🎲 EXEMPLO:</div>
+    Personagem com AGI 5 tenta escalar uma parede (Dificuldade 10).<br>
+    Rola os dados: <strong>[4]+[3]</strong> = 7 + 5 (AGI) = <strong>12</strong><br>
+    12 ≥ 10 → <span class="result-ok">✅ SUCESSO!</span>
+  </div>
+
+  <h3>Escala de Dificuldade</h3>
+  <div style="margin-bottom:16px;">
+    <div class="diff-row"><div class="diff-name">Fácil</div><div class="diff-num">6</div><div class="diff-bar"><div class="diff-fill" style="width:15%"></div></div><div class="diff-ex">Subir uma árvore baixa</div></div>
+    <div class="diff-row"><div class="diff-name">Médio</div><div class="diff-num">8</div><div class="diff-bar"><div class="diff-fill" style="width:25%"></div></div><div class="diff-ex">Escalar um muro simples</div></div>
+    <div class="diff-row"><div class="diff-name">Difícil</div><div class="diff-num">10</div><div class="diff-bar"><div class="diff-fill" style="width:35%"></div></div><div class="diff-ex">Nadar contra a correnteza</div></div>
+    <div class="diff-row"><div class="diff-name">Desafiador</div><div class="diff-num">12</div><div class="diff-bar"><div class="diff-fill" style="width:45%"></div></div><div class="diff-ex">Saltar de uma carroça em movimento</div></div>
+    <div class="diff-row"><div class="diff-name">Formidável</div><div class="diff-num">14</div><div class="diff-bar"><div class="diff-fill" style="width:55%"></div></div><div class="diff-ex">Escalar montanha sob vento forte</div></div>
+    <div class="diff-row"><div class="diff-name">Heroico</div><div class="diff-num">16</div><div class="diff-bar"><div class="diff-fill" style="width:67%"></div></div><div class="diff-ex">Resistir a um veneno mortal</div></div>
+    <div class="diff-row"><div class="diff-name">Lendário</div><div class="diff-num">18</div><div class="diff-bar"><div class="diff-fill" style="width:80%"></div></div><div class="diff-ex">Saltar de uma torre em queda</div></div>
+    <div class="diff-row"><div class="diff-name">Quase Impossível</div><div class="diff-num">20</div><div class="diff-bar"><div class="diff-fill" style="width:90%"></div></div><div class="diff-ex">Sobreviver a uma queda de grande altura</div></div>
+    <div class="diff-row"><div class="diff-name">Praticamente Impossível</div><div class="diff-num">22</div><div class="diff-bar"><div class="diff-fill" style="width:100%"></div></div><div class="diff-ex">Parar um desmoronamento com as mãos</div></div>
+  </div>
+
+  <h3>Regra dos Extremos</h3>
+  <div class="grid2">
+    <div class="box" style="margin:0">
+      <strong>🌟 Acerto Decisivo (duplo 6)</strong><br>
+      O valor do atributo é <strong>dobrado</strong> no cálculo. Se superar a dificuldade, o resultado é espetacular com benefícios adicionais.
+    </div>
+    <div class="box red" style="margin:0">
+      <strong>💀 Falha Crítica (duplo 1)</strong><br>
+      O valor do atributo é <strong>reduzido à metade</strong>. Se ainda falhar, a ação tem consequências graves — acidentes, perda de equipamento, ferimentos.
+    </div>
+  </div>
+
+  <h3>Vontade</h3>
+  <p>A Vontade é o recurso mental do personagem. Pode ser usada estrategicamente:</p>
+  <ul>
+    <li>Antes de rolar os dados, declare o uso de Vontade: <strong>+4 ao atributo</strong> do teste.</li>
+    <li>Custo: <strong>-1 VON</strong> para ativar. Se falhar mesmo assim, perde mais <strong>-1 VON</strong>.</li>
+    <li>Quatro falhas consecutivas com Vontade: perde <strong>1 ponto permanente</strong> de VON.</li>
+  </ul>
+  <div class="box purple">Quando VON chega a 0: teste de SAB dificuldade 14. Sucesso = desmaia. Falha = crise emocional — o sentimento dominante toma conta das ações.</div>
+
+  <h3>Testes Resistidos</h3>
+  <p>Quando dois personagens disputam diretamente, cada um rola seus dados e soma o atributo. Quem obtiver o maior total vence — não há dificuldade fixa.</p>
+  <div class="roll-ex">
+    <div class="dice">🎲 EXEMPLO:</div>
+    Corrida entre dois personagens.<br>
+    Personagem A (AGI 6): <strong>[6]+[4]</strong>+6 = <strong>16</strong><br>
+    Personagem B (AGI 8): <strong>[3]+[2]</strong>+8 = <strong>13</strong><br>
+    <span class="result-ok">A vence</span> — mesmo com AGI menor, a sorte foi decisiva.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     COMBATE
+══════════════════════════════════════ -->
+<div class="section" id="tab-combate">
+  <h2>Combate</h2>
+
+  <h3>Estrutura do Combate</h3>
+  <p>Todo combate tem três fases:</p>
+
+  <div class="flow-step">
+    <div class="flow-num">1</div>
+    <div class="flow-body">
+      <div class="flow-title">Iniciativa</div>
+      <div class="flow-text">Cada participante rola <strong>2d6 + AGI + 2</strong>. Maior total age primeiro. Em caso de empate, agem simultaneamente.</div>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">2</div>
+    <div class="flow-body">
+      <div class="flow-title">Confronto</div>
+      <div class="flow-text">Na ordem da iniciativa, cada personagem executa suas ações. Continua até todos os inimigos serem derrotados ou fugirem.</div>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="flow-num">3</div>
+    <div class="flow-body">
+      <div class="flow-title">Espólios</div>
+      <div class="flow-text">Após o combate: XP, itens e tesouros dos inimigos derrotados.</div>
+    </div>
+  </div>
+
+  <h3>Tipos de Ação</h3>
+  <table>
+    <tr><th>Ação</th><th>Tempo</th><th>Descrição</th></tr>
+    <tr><td>Ação Livre</td><td>Sem custo</td><td>Falar, usar sentidos — não interfere em outras ações</td></tr>
+    <tr><td>Ação de Movimento</td><td>½ turno</td><td>Deslocamento — move até <code>3+(AGI÷4)×3</code> metros</td></tr>
+    <tr><td>Ação Comum</td><td>½ turno</td><td>Atacar, usar um poder, interagir com objeto</td></tr>
+    <tr><td>Ação Completa</td><td>Turno inteiro</td><td>Correr (3× movimento), agarrar, explorar fraqueza</td></tr>
+  </table>
+
+  <h3>Ataque e Dano</h3>
+  <div class="box">
+    <strong>Ataque comum:</strong> role <code>2d6 + ATQ</code> vs <strong>Defesa</strong> do alvo.<br>
+    Se o total <strong>superar</strong> a Defesa: acerto — a diferença é subtraída da <strong>Vitalidade</strong> do alvo (+ bônus de dano).<br>
+    Se o total for <strong>menor ou igual:</strong> miss — o golpe foi desviado ou absorvido.
+  </div>
+  <div class="box blue">
+    <strong>Ataque mágico:</strong> role <code>2d6 + SAB</code> vs <strong>Resistência Mágica</strong> do alvo.<br>
+    Dano = diferença + bônus de dano mágico.
+  </div>
+
+  <div class="roll-ex">
+    <div class="dice">🎲 EXEMPLO DE ATAQUE:</div>
+    Guerreiro (ATQ 6, Espada de Duas Mãos +1 ATQ, +2 dano) ataca inimigo (DEF 12).<br>
+    Rola: <strong>[5]+[3]</strong>+7 (ATQ+bônus) = <strong>15</strong><br>
+    15 > 12 → Acerto! Dano = (15-12)+2 = <span class="result-ok"><strong>5 pontos de VIT</strong></span>
+  </div>
+
+  <h3>Ações de Combate</h3>
+  <table>
+    <tr><th>Ação</th><th>Tipo</th><th>Efeito</th></tr>
+    <tr><td>Ataque Comum</td><td>Comum</td><td>2d6+ATQ vs DEF. Dano = diferença + bônus.</td></tr>
+    <tr><td>Ataque à Distância</td><td>Comum</td><td>+2 no Ataque. -1 por 10m de distância além do alcance.</td></tr>
+    <tr><td>Defesa Total</td><td>Comum</td><td>Adiciona resultado dos 2d6 à Defesa. Abdica do ataque.</td></tr>
+    <tr><td>Contra-ataque</td><td>Comum</td><td>Após Defesa Total bem-sucedida: diferença somada ao próximo ataque.</td></tr>
+    <tr><td>Aparar</td><td>Movimento</td><td>Teste de ATQ defensivo — transforma ataque em teste resistido.</td></tr>
+    <tr><td>Agarrar</td><td>Completa</td><td>Teste resistido de DEF. Sucesso = imobiliza no turno seguinte.</td></tr>
+    <tr><td>Ataque Focado</td><td>Comum</td><td>-2 ATQ para mirar local específico. Efeitos situacionais.</td></tr>
+    <tr><td>Explorar Fraqueza</td><td>Completa</td><td>Teste SAB vs (2+RES do alvo). Sucesso: -4 DEF no próximo turno.</td></tr>
+    <tr><td>Provocação</td><td>Movimento</td><td>2d6 vs SAB do alvo. Sucesso: alvo obrigado a atacar você.</td></tr>
+    <tr><td>Ataque Surpresa</td><td>Comum</td><td>Alvo distraído ou já agiu: DEF reduzida à metade.</td></tr>
+    <tr><td>Correr</td><td>Completa</td><td>Move 3× a distância de movimento básico.</td></tr>
+  </table>
+
+  <h3>Condições Especiais</h3>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Indefeso</div>Personagem imobilizado. Defesa reduzida à <strong>metade</strong>.</div>
+    <div class="card"><div class="card-title">Paralisado</div>Incapaz de se mover. Considerado Indefeso em combate.</div>
+    <div class="card"><div class="card-title">Dano Contínuo</div>Sofre dano por turno. Teste de RES dificuldade 10 (Ação de Movimento) para remover.</div>
+    <div class="card"><div class="card-title">Confuso</div>Apenas 50% de chance de sucesso em cada ação. Receber dano pode remover — ou derrubar.</div>
+  </div>
+
+  <h3>Vitalidade Zero</h3>
+  <div class="box red">
+    Quando a VIT chega a 0, o personagem entra em <strong>inconsciência</strong> e deve rolar <strong>RES vs dificuldade 14</strong>:<br><br>
+    <strong>Sucesso:</strong> fica com 1 VIT temporário. Qualquer dano adicional = morte.<br>
+    <strong>Falha:</strong> o personagem morre.
+  </div>
+
+  <h3>Regra dos Extremos no Combate</h3>
+  <table>
+    <tr><th>Situação</th><th>Efeito</th></tr>
+    <tr><td>🌟 Iniciativa Decisiva (duplo 6)</td><td>+4 na Iniciativa durante o turno inteiro</td></tr>
+    <tr><td>⚡ Super Aceleração (diferença > 6)</td><td>Ação comum ou de movimento extra no final dos turnos</td></tr>
+    <tr><td>💀 Sem Iniciativa (duplo 1)</td><td>Não age no primeiro turno</td></tr>
+    <tr><td>🌟 Ataque Crítico (duplo 6)</td><td>Soma o valor total do ATQ ao dano causado</td></tr>
+    <tr><td>🌟 Super Golpe (duplo 6 + VON)</td><td>Se alvo falhar em DEF vs ATQ do atacante: finalizado</td></tr>
+    <tr><td>💀 Ataque Catastrófico (duplo 1)</td><td>O atacante sofre dano igual ao próprio ATQ</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════
+     PODERES
+══════════════════════════════════════ -->
+<div class="section" id="tab-poderes">
+  <h2>Poderes</h2>
+
+  <p>Poderes são habilidades especiais — naturais, mágicas ou tecnológicas. Um personagem adquire poderes abrindo mão de um equipamento (arma ou armadura), convertendo seus 4 pontos em pontos para poderes.</p>
+
+  <div class="box">
+    <strong>Ativar um poder:</strong> custa <strong>1 ponto de Vontade</strong> e uma ação livre. Permanece ativo até se esgotar.<br>
+    <strong>Múltiplos poderes</strong> podem estar ativos simultaneamente — mas nunca ativados no mesmo turno.<br>
+    <strong>Custo de aquisição:</strong> 5 XP por poder ou aprimoramento.
+  </div>
+
+  <h3>Lista de Poderes</h3>
+
+  <div class="power-row">
+    <div class="power-name">⚔️ Ataque Especial</div>
+    <div class="power-desc">Substitui o atributo <strong>ATQ</strong> por <strong>RES</strong> ou <strong>AGI</strong> na Jogada de Ataque. Um teste de 2d + valor do poder determina a duração em turnos.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">✨ Ataque Mágico</div>
+    <div class="power-desc">A Jogada de Ataque usa <strong>SAB</strong> como base e afeta a <strong>Resistência Mágica</strong> do alvo em vez da Defesa.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">🔒 Ataque Paralisante</div>
+    <div class="power-desc">Deixa o alvo <strong>indefeso</strong> por um número de turnos igual ao valor do poder. Esgota-se após afetar um alvo com sucesso.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">⭐ Bônus Situacional</div>
+    <div class="power-desc">Concede bônus igual ao valor do poder em testes enquanto uma <strong>condição específica</strong> estiver presente. A condição é definida na criação do personagem.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">💚 Cura</div>
+    <div class="power-desc">Com toque ou concentração, restaura Vitalidade. Um teste de <strong>2d + valor do poder</strong> determina o total de pontos restauráveis antes de se esgotar.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">🛡️ Escudo de Força</div>
+    <div class="power-desc">Cria uma barreira que aumenta a <strong>Defesa</strong> de um ou mais alvos tocados. Reduz 1 ponto por turno por alvo protegido.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">🔮 Escudo Mágico</div>
+    <div class="power-desc">Igual ao Escudo de Força, mas aumenta a <strong>Resistência Mágica</strong> dos alvos em vez da Defesa.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">🐺 Forma Alternativa</div>
+    <div class="power-desc">Permite se transformar numa criatura com <strong>6 pontos por nível</strong> do poder (+2d) para distribuir em atributos. Mantém a Vontade original. Permanece até o fim da cena ou perder toda a VIT.</div>
+    <div class="power-cost">Custo: 1 VON (ou complicadores eliminam o custo)</div>
+  </div>
+  <div class="power-row">
+    <div class="power-name">🐉 Invocar Criatura</div>
+    <div class="power-desc">Invoca uma criatura com <strong>6 pontos por valor do poder + 2d</strong> para distribuir nos atributos. Luta ao lado do personagem até o fim da cena ou ser derrotada.</div>
+    <div class="power-cost">Custo: 1 VON para ativar</div>
+  </div>
+
+  <h3>Complicadores</h3>
+  <p>Complicadores eliminam o custo de VON para ativar o poder, mas criam desafios narrativos:</p>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Descontrole</div>
+      Enquanto ativo, o personagem perde o controle de suas ações. Para agir livremente: teste de SAB dificuldade 10 <em>ou</em> gaste 1 VON por turno.
+    </div>
+    <div class="card">
+      <div class="card-title">Instabilidade</div>
+      O poder se comporta de forma imprevisível: pode falhar, funcionar normalmente ou operar com o dobro da eficácia. Ativação e duração ficam a critério da narrativa.
+    </div>
+  </div>
+  <div class="box">Remover um complicador custa <strong>10 XP</strong> e exige justificativa narrativa coerente.</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     CLASSES
+══════════════════════════════════════ -->
+<div class="section" id="tab-classes">
+  <h2>Classes</h2>
+  <p>A classe define o papel do personagem na aventura. Os atributos da classe somam <strong>8 pontos</strong> e incluem dois poderes fixos. Cada classe abre mão de um equipamento (arma <em>ou</em> armadura) para obter seus poderes.</p>
+
+  <div class="grid2">
+
+    <div class="cls-card">
+      <span class="cls-emoji">⚔️</span>
+      <div class="cls-name">Guerreiro</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Combatente nato. A força dos heróis de RPG se manifesta em seus próprios punhos.</p>
+      <div class="cls-attrs">
+        <div class="cls-attr">ATQ <b>+3</b></div>
+        <div class="cls-attr">RES <b>+3</b></div>
+        <div class="cls-attr">SAB <b>+1</b></div>
+        <div class="cls-attr">AGI <b>+1</b></div>
+      </div>
+      <div class="cls-equip">🗡️ Escolhe <strong>arma</strong> (sem armadura)</div>
+      <div class="cls-powers">◆ Ataque Especial 2 (usa RES no ataque)<br>◆ Bônus Situacional 2 (força bruta)</div>
+    </div>
+
+    <div class="cls-card">
+      <span class="cls-emoji">🛡️</span>
+      <div class="cls-name">Cavaleiro</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Protetor resiliente. A tenacidade dos paladinos agora protege quem está ao seu lado.</p>
+      <div class="cls-attrs">
+        <div class="cls-attr">ATQ <b>+1</b></div>
+        <div class="cls-attr">RES <b>+3</b></div>
+        <div class="cls-attr">SAB <b>+1</b></div>
+        <div class="cls-attr">AGI <b>+3</b></div>
+      </div>
+      <div class="cls-equip">🛡️ Escolhe <strong>escudo/equipamento</strong> (sem arma)</div>
+      <div class="cls-powers">◆ Escudo de Força 2<br>◆ Bônus Situacional 2 (vigor físico)</div>
+    </div>
+
+    <div class="cls-card">
+      <span class="cls-emoji">✨</span>
+      <div class="cls-name">Mago</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Canalizador arcano. Os feitiços das telas agora saem de suas próprias mãos.</p>
+      <div class="cls-attrs">
+        <div class="cls-attr">ATQ <b>+1</b></div>
+        <div class="cls-attr">RES <b>+1</b></div>
+        <div class="cls-attr">SAB <b>+3</b></div>
+        <div class="cls-attr">AGI <b>+3</b></div>
+      </div>
+      <div class="cls-equip">🔮 Escolhe <strong>foco mágico</strong> (sem armadura)</div>
+      <div class="cls-powers">◆ Ataque Mágico 2<br>◆ Escudo Mágico 2</div>
+    </div>
+
+    <div class="cls-card">
+      <span class="cls-emoji">✝️</span>
+      <div class="cls-name">Clérigo</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Suporte sagrado. O instinto de cuidar dos aliados virou poder real de cura.</p>
+      <div class="cls-attrs">
+        <div class="cls-attr">ATQ <b>+1</b></div>
+        <div class="cls-attr">RES <b>+3</b></div>
+        <div class="cls-attr">SAB <b>+3</b></div>
+        <div class="cls-attr">AGI <b>+1</b></div>
+      </div>
+      <div class="cls-equip">🛡️ Escolhe <strong>armadura</strong> (sem arma)</div>
+      <div class="cls-powers">◆ Cura 2<br>◆ Escudo Mágico 2</div>
+    </div>
+
+    <div class="cls-card">
+      <span class="cls-emoji">🏹</span>
+      <div class="cls-name">Caçador</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Rastreador preciso. A paciência e o olhar aguçado dos jogos funcionam no mundo real.</p>
+      <div class="cls-attrs">
+        <div class="cls-attr">ATQ <b>+3</b></div>
+        <div class="cls-attr">RES <b>+1</b></div>
+        <div class="cls-attr">SAB <b>+3</b></div>
+        <div class="cls-attr">AGI <b>+1</b></div>
+      </div>
+      <div class="cls-equip">🏹 Escolhe <strong>arma</strong> (sem armadura)</div>
+      <div class="cls-powers">◆ Ataque Paralisante 2<br>◆ Bônus Situacional 2 (armar/desarmar armadilhas)</div>
+    </div>
+
+    <div class="cls-card">
+      <span class="cls-emoji">🗡️</span>
+      <div class="cls-name">Ladino</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Gatuno ágil. A destreza e o faro para brechas virou velocidade e esperteza de verdade.</p>
+      <div class="cls-attrs">
+        <div class="cls-attr">ATQ <b>+3</b></div>
+        <div class="cls-attr">RES <b>+1</b></div>
+        <div class="cls-attr">SAB <b>+1</b></div>
+        <div class="cls-attr">AGI <b>+3</b></div>
+      </div>
+      <div class="cls-equip">🗡️ Escolhe <strong>arma</strong> (sem armadura)</div>
+      <div class="cls-powers">◆ Ataque Especial 2 (usa AGI no ataque)<br>◆ Bônus Situacional 2 (abrir fechaduras)</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TIPOS
+══════════════════════════════════════ -->
+<div class="section" id="tab-tipos">
+  <h2>Tipos de Aluno</h2>
+  <p>O Tipo representa o estereótipo escolar do personagem e fornece <strong>12 pontos</strong> de atributo. Na fase pré-aventura (antes de ganhar poderes), apenas os atributos do Tipo são usados nos testes.</p>
+
+  <div class="grid3">
+    <div class="type-card"><div class="type-name">O Novato</div><div class="type-desc">Equilibrado, ainda se descobrindo. Não se destaca em nada — ainda.</div><div class="type-attrs">ATQ <b>3</b> RES <b>3</b> SAB <b>3</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Lutador</div><div class="type-desc">Força e combate acima de tudo. Vai de frente, nem sempre aguenta o troco.</div><div class="type-attrs">ATQ <b>4</b> RES <b>2</b> SAB <b>3</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Valentão</div><div class="type-desc">Intimidação e presença. Pouco raciocínio, muita atitude.</div><div class="type-attrs">ATQ <b>4</b> RES <b>3</b> SAB <b>2</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Líder</div><div class="type-desc">Impõe respeito. Age rápido demais, nem sempre calcula.</div><div class="type-attrs">ATQ <b>4</b> RES <b>3</b> SAB <b>3</b> AGI <b>2</b></div></div>
+    <div class="type-card"><div class="type-name">O Durão</div><div class="type-desc">Aguenta tudo sem reclamar. Difícil de derrubar.</div><div class="type-attrs">ATQ <b>2</b> RES <b>4</b> SAB <b>3</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Casca-Grossa</div><div class="type-desc">Resistente e teimoso. Pouco perspicaz, quase impossível de parar.</div><div class="type-attrs">ATQ <b>3</b> RES <b>4</b> SAB <b>2</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Metódico</div><div class="type-desc">Sólido e confiável. Não improvisa bem, mas raramente erra.</div><div class="type-attrs">ATQ <b>3</b> RES <b>4</b> SAB <b>3</b> AGI <b>2</b></div></div>
+    <div class="type-card"><div class="type-name">O Nerd</div><div class="type-desc">Inteligência acima de tudo. Evita conflito físico, resolve com a cabeça.</div><div class="type-attrs">ATQ <b>2</b> RES <b>3</b> SAB <b>4</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Estudioso</div><div class="type-desc">Dedicado aos livros. Corpo frágil, mente afiada.</div><div class="type-attrs">ATQ <b>3</b> RES <b>2</b> SAB <b>4</b> AGI <b>3</b></div></div>
+    <div class="type-card"><div class="type-name">O Artista</div><div class="type-desc">Criativo e observador. Tem seu próprio ritmo.</div><div class="type-attrs">ATQ <b>3</b> RES <b>3</b> SAB <b>4</b> AGI <b>2</b></div></div>
+    <div class="type-card"><div class="type-name">O Popular</div><div class="type-desc">Presença social e mobilidade. Conhece todo mundo, foge de briga.</div><div class="type-attrs">ATQ <b>2</b> RES <b>3</b> SAB <b>3</b> AGI <b>4</b></div></div>
+    <div class="type-card"><div class="type-name">O Rebelde</div><div class="type-desc">Rápido e imprevisível. Ignora regras, age por instinto.</div><div class="type-attrs">ATQ <b>3</b> RES <b>2</b> SAB <b>3</b> AGI <b>4</b></div></div>
+    <div class="type-card"><div class="type-name">O Jogador</div><div class="type-desc">Velocidade e reflexo apurados. Pouca teoria, muita prática.</div><div class="type-attrs">ATQ <b>3</b> RES <b>3</b> SAB <b>2</b> AGI <b>4</b></div></div>
+  </div>
+
+  <div class="box blue">
+    <strong>Atributos finais = Classe + Tipo.</strong> Um Guerreiro (ATQ+3) que é O Lutador (ATQ+4) terá ATQ total de <strong>7</strong>.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     EQUIPAMENTOS
+══════════════════════════════════════ -->
+<div class="section" id="tab-equipamentos">
+  <h2>Equipamentos</h2>
+  <p>Cada equipamento oferece <strong>4 pontos</strong> distribuídos entre os campos da Ficha de Combate. Penalidades devolvem pontos — permitindo bônus maiores em outros campos.</p>
+
+  <h3>Armas</h3>
+  <table>
+    <tr><th>Arma</th><th>ATQ</th><th>INI</th><th>DEF</th><th>Dano Fís.</th><th>Dano Mag.</th></tr>
+    <tr><td>Sem Arma</td><td>+1</td><td>+2</td><td>+1</td><td>—</td><td>—</td></tr>
+    <tr><td>Espada</td><td>+1</td><td>—</td><td>—</td><td>+1</td><td>+2</td></tr>
+    <tr><td>Espada e Escudo</td><td>+1</td><td>—</td><td>+2</td><td>+1</td><td>—</td></tr>
+    <tr><td>Espada de Duas Mãos</td><td>+1</td><td>-1</td><td>—</td><td>+2</td><td>+2</td></tr>
+    <tr><td>Duas Espadas</td><td>+2</td><td>+1</td><td>—</td><td>+1</td><td>—</td></tr>
+    <tr><td>Machado</td><td>+1</td><td>—</td><td>—</td><td>+2</td><td>+1</td></tr>
+    <tr><td>Machado e Escudo</td><td>+1</td><td>—</td><td>+2</td><td>+2</td><td>-1</td></tr>
+    <tr><td>Machado de Duas Mãos</td><td>+1</td><td>-1</td><td>—</td><td>+3</td><td>+1</td></tr>
+    <tr><td>Dois Machados</td><td>+1</td><td>+1</td><td>—</td><td>+2</td><td>—</td></tr>
+    <tr><td>Martelo</td><td>+1</td><td>—</td><td>—</td><td>+2</td><td>+1</td></tr>
+    <tr><td>Martelo e Escudo</td><td>+1</td><td>—</td><td>+2</td><td>+2</td><td>-1</td></tr>
+    <tr><td>Martelo de Duas Mãos</td><td>+1</td><td>-1</td><td>—</td><td>+3</td><td>+1</td></tr>
+    <tr><td>Dois Martelos</td><td>+1</td><td>+1</td><td>—</td><td>+2</td><td>—</td></tr>
+    <tr><td>Montante</td><td>+2</td><td>-2</td><td>—</td><td>+4</td><td>—</td></tr>
+    <tr><td>Mangual</td><td>+1</td><td>-1</td><td>—</td><td>+3</td><td>+1</td></tr>
+    <tr><td>Chicote</td><td>+1</td><td>+1</td><td>—</td><td>+1</td><td>+1</td></tr>
+    <tr><td>Adaga</td><td>+1</td><td>+1</td><td>—</td><td>+2</td><td>—</td></tr>
+    <tr><td>Duas Adagas</td><td>+2</td><td>+1</td><td>—</td><td>+1</td><td>—</td></tr>
+    <tr><td>Lança</td><td>+2</td><td>—</td><td>—</td><td>—</td><td>+2</td></tr>
+    <tr><td>Lança e Escudo</td><td>+2</td><td>—</td><td>+2</td><td>—</td><td>—</td></tr>
+    <tr><td>Arco</td><td>+3</td><td>—</td><td>—</td><td>+1</td><td>—</td></tr>
+    <tr><td>Besta</td><td>+3</td><td>—</td><td>—</td><td>+1</td><td>—</td></tr>
+    <tr><td>Cajado / Grimório / Amuleto</td><td>—</td><td>—</td><td>—</td><td>—</td><td>+4</td></tr>
+    <tr><td>Escudo de Combate</td><td>+1</td><td>—</td><td>+3</td><td>—</td><td>—</td></tr>
+    <tr><td>Escudos Duplos</td><td>—</td><td>-1</td><td>+4</td><td>—</td><td>+1</td></tr>
+    <tr><td>Espada e Escudo</td><td>+1</td><td>—</td><td>+2</td><td>+1</td><td>—</td></tr>
+  </table>
+
+  <h3>Armaduras</h3>
+  <table>
+    <tr><th>Armadura</th><th>DEF</th><th>INI</th><th>Res. Mágica</th></tr>
+    <tr><td>Túnica</td><td>+1</td><td>+1</td><td>+2</td></tr>
+    <tr><td>Traje Ágil</td><td>+2</td><td>+2</td><td>—</td></tr>
+    <tr><td>Armadura de Couro</td><td>+3</td><td>+1</td><td>—</td></tr>
+    <tr><td>Cota de Malha</td><td>+4</td><td>—</td><td>—</td></tr>
+    <tr><td>Meia Armadura</td><td>+5</td><td>-1</td><td>—</td></tr>
+    <tr><td>Armadura Pesada</td><td>+6</td><td>-2</td><td>—</td></tr>
+  </table>
+
+  <h3>Restrições por Classe</h3>
+  <table>
+    <tr><th>Classe</th><th>Equipamento disponível</th></tr>
+    <tr><td>⚔️ Guerreiro</td><td>Espadas, Machados, Martelos, Montante, Mangual, Sem Arma</td></tr>
+    <tr><td>🛡️ Cavaleiro</td><td>Escudo de Combate, Escudos Duplos, Espada/Lança/Machado/Martelo e Escudo</td></tr>
+    <tr><td>✨ Mago</td><td>Cajado, Grimório, Amuleto</td></tr>
+    <tr><td>✝️ Clérigo</td><td>Armadura de Couro, Cota de Malha, Meia Armadura, Armadura Pesada</td></tr>
+    <tr><td>🏹 Caçador</td><td>Arco, Besta, Adaga, Duas Adagas, Lança</td></tr>
+    <tr><td>🗡️ Ladino</td><td>Adaga, Duas Adagas, Chicote</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════
+     FICHA EXEMPLO
+══════════════════════════════════════ -->
+<div class="section" id="tab-ficha">
+  <h2>Exemplo de Ficha</h2>
+  <p>Um Guerreiro com tipo O Lutador, equipado com Espada de Duas Mãos.</p>
+
+  <div class="ficha">
+    <div class="ficha-header">
+      <div>
+        <div class="ficha-name">⚔️ Exemplo — Guerreiro</div>
+        <div class="ficha-id">Tipo: O Lutador · Equipamento: Espada de Duas Mãos</div>
+      </div>
+    </div>
+
+    <div class="ficha-section">Atributos (Classe + Tipo)</div>
+    <div class="ficha-grid">
+      <div class="ficha-stat"><div class="fl">ATQ</div><div class="fv">7</div><div style="font-size:.5rem;color:var(--muted)">3+4</div></div>
+      <div class="ficha-stat"><div class="fl">RES</div><div class="fv">5</div><div style="font-size:.5rem;color:var(--muted)">3+2</div></div>
+      <div class="ficha-stat"><div class="fl">SAB</div><div class="fv">4</div><div style="font-size:.5rem;color:var(--muted)">1+3</div></div>
+      <div class="ficha-stat"><div class="fl">AGI</div><div class="fv">4</div><div style="font-size:.5rem;color:var(--muted)">1+3</div></div>
+    </div>
+
+    <div class="ficha-section">Vitalidade & Vontade</div>
+    <div class="ficha-grid2" style="margin-bottom:10px">
+      <div class="ficha-stat"><div class="fl">Vitalidade</div><div class="fv" style="color:var(--hp)">12</div><div style="font-size:.5rem;color:var(--muted)">10 + (5÷2) = 12</div></div>
+      <div class="ficha-stat"><div class="fl">Vontade</div><div class="fv" style="color:var(--wp)">12</div><div style="font-size:.5rem;color:var(--muted)">10 + (4÷2) = 12</div></div>
+    </div>
+
+    <div class="ficha-section">Ficha de Combate</div>
+    <div class="ficha-grid">
+      <div class="ficha-stat"><div class="fl">Iniciativa</div><div class="fv">5</div><div style="font-size:.5rem;color:var(--muted)">2+4-1</div></div>
+      <div class="ficha-stat"><div class="fl">J. Ataque</div><div class="fv">8</div><div style="font-size:.5rem;color:var(--muted)">7+1(espada)</div></div>
+      <div class="ficha-stat"><div class="fl">Defesa</div><div class="fv">9</div><div style="font-size:.5rem;color:var(--muted)">4+5</div></div>
+      <div class="ficha-stat"><div class="fl">Res. Mágica</div><div class="fv">8</div><div style="font-size:.5rem;color:var(--muted)">4+4</div></div>
+    </div>
+    <div class="ficha-grid2" style="margin-bottom:10px">
+      <div class="ficha-stat"><div class="fl">Dano Físico</div><div class="fv">+2</div><div style="font-size:.5rem;color:var(--muted)">bônus da espada</div></div>
+      <div class="ficha-stat"><div class="fl">Dano Mágico</div><div class="fv">+2</div><div style="font-size:.5rem;color:var(--muted)">bônus da espada</div></div>
+    </div>
+
+    <div class="ficha-section">Poderes</div>
+    <div class="ficha-powers">
+      <span>◆</span> Ataque Especial 2 — substitui ATQ por RES (5) no ataque. Dura 2d turnos.<br>
+      <span>◆</span> Bônus Situacional 2 — +2 em testes de força bruta fora de combate.
+    </div>
+
+    <div class="ficha-section">Equipamento</div>
+    <p style="font-size:.75rem;color:var(--text)"><strong>Espada de Duas Mãos:</strong> ATQ +1 · INI -1 · Dano Fís. +2 · Dano Mag. +2</p>
+  </div>
+
+  <div class="box" style="margin-top:20px">
+    <strong>Lendo a ficha:</strong> Em combate, o Guerreiro ataca com <strong>2d6 + 8</strong> (J. de Ataque) e causa <strong>diferença + 2</strong> de dano físico. Sua Defesa é <strong>9</strong> — inimigos precisam superar 9 para atingi-lo. Com Ataque Especial ativo, substitui os 8 de ATQ por RES (5) na jogada — útil quando o alvo tem DEF baixa mas resistência mágica alta.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     EXPERIÊNCIA
+══════════════════════════════════════ -->
+<div class="section" id="tab-xp">
+  <h2>Experiência</h2>
+  <p>XP é concedido ao final de cada sessão e batalha, avaliando <strong>engajamento e performance</strong>. O sistema recompensa tanto a criatividade narrativa quanto o desempenho em combate.</p>
+
+  <h3>Tabela de XP</h3>
+  <div class="grid2">
+    <div>
+      <h4>Atuação Narrativa</h4>
+      <div class="xp-row"><span>Criatividade</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Coerência com o personagem</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Boa conduta (trabalho em equipe)</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Superar dificuldades</span><span class="xp-val">+2</span></div>
+      <div class="xp-row"><span>Equilíbrio geral</span><span class="xp-val xp-crit">+1 a +3</span></div>
+      <div class="xp-row"><span>Impulsividade / Imprudência</span><span class="xp-val" style="color:var(--accent3)">-1</span></div>
+      <div class="xp-row"><span>Incoerência narrativa</span><span class="xp-val" style="color:var(--accent3)">-1</span></div>
+    </div>
+    <div>
+      <h4>Combate</h4>
+      <div class="xp-row"><span>Criatividade em combate</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Superar dificuldades</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Sobrevivência</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Permanecer ileso</span><span class="xp-val">+1</span></div>
+      <div class="xp-row"><span>Equilíbrio geral</span><span class="xp-val xp-crit">+1 a +3</span></div>
+      <div class="xp-row"><span>Imprudência em combate</span><span class="xp-val" style="color:var(--accent3)">-1</span></div>
+      <div class="xp-row"><span>Derrota</span><span class="xp-val" style="color:var(--accent3)">-1</span></div>
+    </div>
+  </div>
+
+  <h3>Gastando XP</h3>
+  <table>
+    <tr><th>Melhoria</th><th>Custo</th></tr>
+    <tr><td>Aumentar atributo (até nível 9)</td><td>10 XP</td></tr>
+    <tr><td>Aumentar atributo (nível 9 → 12)</td><td>20 XP</td></tr>
+    <tr><td>Adquirir ou aprimorar um poder</td><td>5 XP</td></tr>
+    <tr><td>Remover um complicador de poder</td><td>10 XP</td></tr>
+  </table>
+
+  <div class="box">
+    <strong>Atributos acima de 12</strong> indicam capacidades sobrenaturais — além do limite humano. Exigem justificativa narrativa e aprovação do narrador.
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Personagem — Heróis Improváveis</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ══ SCREEN VARS ══ */
+:root{
+  --bg:#0a0a0f;--panel:#10101a;--card:#13131f;--border:#1e1e32;--border2:#2a2a44;
+  --accent:#c8f03a;--accent2:#6b5fff;--accent3:#ff5f7e;--hp:#3affc8;--wp:#c87bff;
+  --text:#cccce0;--muted:#55556a;
+  --font-d:'Orbitron',monospace;--font-b:'Inter',sans-serif;--font-m:'Share Tech Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;}
+input,select,textarea{font-family:var(--font-b);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* ══ TOOLBAR ══ */
+#toolbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 20px;gap:10px;
+}
+#toolbar h1{font-family:var(--font-d);font-size:.8rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;}
+.tb-btns{display:flex;gap:8px;}
+.tb-btn{font-family:var(--font-d);font-size:.58rem;letter-spacing:1px;padding:6px 14px;border:1px solid;cursor:pointer;transition:.2s;background:transparent;text-transform:uppercase;}
+.tb-btn.save{color:var(--accent);border-color:var(--accent);}
+.tb-btn.save:hover{background:var(--accent);color:var(--bg);}
+.tb-btn.load{color:var(--accent2);border-color:var(--accent2);}
+.tb-btn.load:hover{background:var(--accent2);color:#fff;}
+.tb-btn.print{color:var(--hp);border-color:var(--hp);}
+.tb-btn.print:hover{background:var(--hp);color:var(--bg);}
+.tb-btn.clear{color:var(--muted);border-color:var(--muted);}
+.tb-btn.clear:hover{color:var(--accent3);border-color:var(--accent3);}
+
+/* ══ SHEET WRAPPER ══ */
+#sheet-wrap{padding:80px 20px 40px;max-width:900px;margin:0 auto;}
+
+/* ══ SHEET ══ */
+#sheet{
+  background:var(--panel);border:1px solid var(--border2);
+  display:grid;grid-template-columns:200px 1fr;grid-template-rows:auto;
+  gap:0;
+}
+
+/* ── LEFT COLUMN ── */
+#col-left{
+  border-right:1px solid var(--border2);
+  display:flex;flex-direction:column;
+}
+
+/* Avatar */
+#avatar-zone{
+  position:relative;width:200px;height:200px;
+  border-bottom:1px solid var(--border2);cursor:pointer;overflow:hidden;
+  background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+#avatar-zone img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+#avatar-placeholder{font-size:4rem;opacity:.3;}
+#avatar-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;transition:.2s;
+}
+#avatar-zone:hover #avatar-overlay{opacity:1;}
+#avatar-overlay span{font-family:var(--font-d);font-size:.6rem;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+#avatar-input{display:none;}
+
+/* Class emblem */
+#class-emblem{
+  padding:12px;border-bottom:1px solid var(--border2);text-align:center;
+}
+.emblem-emoji{font-size:2.5rem;display:block;margin-bottom:4px;}
+.emblem-class{font-family:var(--font-d);font-size:.75rem;letter-spacing:2px;color:var(--accent);}
+.emblem-type{font-size:.65rem;color:var(--accent2);letter-spacing:1px;margin-top:2px;}
+
+/* Left fields */
+.left-field{padding:8px 12px;border-bottom:1px solid var(--border);}
+.lf-label{font-family:var(--font-d);font-size:.5rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.lf-input{
+  width:100%;background:transparent;border:none;outline:none;
+  font-family:var(--font-m);font-size:.82rem;color:var(--text);caret-color:var(--accent);
+}
+.lf-input::placeholder{color:var(--border2);}
+.lf-select{
+  width:100%;background:var(--card);border:1px solid var(--border2);outline:none;
+  font-family:var(--font-m);font-size:.75rem;color:var(--text);padding:4px 6px;
+  appearance:none;cursor:pointer;
+}
+option{background:var(--card);}
+
+/* Powers block in left */
+#powers-block{padding:10px 12px;flex:1;}
+.pb-title{font-family:var(--font-d);font-size:.5rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.power-item{margin-bottom:8px;}
+.pi-name{font-family:var(--font-d);font-size:.6rem;letter-spacing:1px;color:var(--wp);margin-bottom:2px;}
+.pi-input{
+  width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;
+  font-size:.72rem;color:var(--text);caret-color:var(--accent);padding:2px 0;
+}
+.pi-input::placeholder{color:var(--border2);}
+
+/* ── RIGHT COLUMN ── */
+#col-right{display:flex;flex-direction:column;}
+
+/* Header strip */
+#sheet-header{
+  padding:14px 16px;border-bottom:1px solid var(--border2);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.sh-title{font-family:var(--font-d);font-size:.6rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.sh-logo{font-family:var(--font-d);font-size:.65rem;letter-spacing:2px;color:var(--accent);opacity:.6;}
+
+/* Attribute hex grid */
+#attr-section{padding:14px 16px;border-bottom:1px solid var(--border2);}
+.section-label{font-family:var(--font-d);font-size:.5rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.attr-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.attr-block{background:var(--card);border:1px solid var(--border2);padding:8px;text-align:center;position:relative;}
+.attr-name{font-family:var(--font-d);font-size:.55rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.attr-val{
+  font-family:var(--font-d);font-size:1.8rem;color:var(--accent);
+  width:100%;background:transparent;border:none;outline:none;text-align:center;
+  caret-color:var(--accent);
+}
+.attr-val::placeholder{color:var(--border2);font-size:1rem;}
+.attr-sub{font-size:.5rem;color:var(--border2);margin-top:2px;}
+.attr-block.atq{border-color:rgba(255,95,126,.3);}
+.attr-block.res{border-color:rgba(58,255,200,.3);}
+.attr-block.sab{border-color:rgba(200,123,255,.3);}
+.attr-block.agi{border-color:rgba(107,95,255,.3);}
+
+/* Derived stats */
+#derived-section{padding:14px 16px;border-bottom:1px solid var(--border2);}
+.derived-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.derived-block{background:var(--card);border:1px solid var(--border);padding:8px 10px;}
+.db-label{font-family:var(--font-d);font-size:.48rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.db-val{font-family:var(--font-d);font-size:1rem;color:var(--accent);}
+.db-val.hp-color{color:var(--hp);}
+.db-val.wp-color{color:var(--wp);}
+.db-formula{font-family:var(--font-m);font-size:.52rem;color:var(--border2);margin-top:1px;}
+
+/* VIT / VON bars */
+#bars-section{padding:12px 16px;border-bottom:1px solid var(--border2);}
+.bar-row{margin-bottom:10px;}
+.bar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.bar-label{font-family:var(--font-d);font-size:.55rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.bar-inputs{display:flex;align-items:center;gap:6px;}
+.bar-current{
+  font-family:var(--font-d);font-size:.9rem;
+  width:46px;background:transparent;border:none;border-bottom:1px solid var(--border2);
+  outline:none;text-align:right;caret-color:var(--accent);
+}
+.bar-current.hp-c{color:var(--hp);}
+.bar-current.wp-c{color:var(--wp);}
+.bar-sep{color:var(--muted);font-size:.8rem;}
+.bar-max{font-family:var(--font-m);font-size:.75rem;color:var(--muted);}
+.bar-track{height:8px;background:var(--border);overflow:hidden;border-radius:1px;}
+.bar-fill{height:100%;transition:width .3s;border-radius:1px;}
+.bar-fill.hp{background:var(--hp);}
+.bar-fill.wp{background:var(--wp);}
+/* Pip row for tracking */
+.pip-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.pip{
+  width:18px;height:18px;border:1px solid var(--border2);cursor:pointer;
+  transition:.15s;flex-shrink:0;
+}
+.pip.filled.hp{background:var(--hp);border-color:var(--hp);}
+.pip.filled.wp{background:var(--wp);border-color:var(--wp);}
+
+/* Equipment */
+#equip-section{padding:14px 16px;border-bottom:1px solid var(--border2);}
+.equip-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:8px;}
+.equip-name-input{
+  background:transparent;border:none;border-bottom:1px solid var(--border2);outline:none;
+  font-family:var(--font-m);font-size:.78rem;color:var(--text);padding:3px 0;width:100%;
+  caret-color:var(--accent);
+}
+.equip-name-input::placeholder{color:var(--border2);}
+.equip-bonus-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.bonus-chip{display:flex;flex-direction:column;align-items:center;background:var(--card);border:1px solid var(--border);padding:4px 8px;min-width:44px;}
+.bc-label{font-size:.48rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.bc-val{
+  font-family:var(--font-m);font-size:.75rem;color:var(--text);
+  width:32px;background:transparent;border:none;outline:none;text-align:center;
+  caret-color:var(--accent);
+}
+
+/* XP & Notes */
+#bottom-section{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;}
+.xp-block{display:flex;flex-direction:column;gap:6px;}
+.xp-row{display:flex;align-items:center;gap:8px;}
+.xp-label{font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase;width:70px;flex-shrink:0;}
+.xp-input{
+  flex:1;background:transparent;border:none;border-bottom:1px solid var(--border2);outline:none;
+  font-family:var(--font-m);font-size:.85rem;color:var(--accent);text-align:center;
+  caret-color:var(--accent);
+}
+.notes-block{display:flex;flex-direction:column;}
+.notes-ta{
+  flex:1;background:transparent;border:1px solid var(--border);outline:none;resize:none;
+  font-size:.75rem;color:var(--text);padding:6px 8px;caret-color:var(--accent);
+  line-height:1.6;min-height:80px;
+}
+.notes-ta::placeholder{color:var(--border2);}
+
+/* ══ PRINT STYLES ══ */
+@media print{
+  @page{size:A4 portrait;margin:12mm 10mm;}
+
+  body{background:#fff !important;color:#111 !important;}
+  #toolbar{display:none !important;}
+  #sheet-wrap{padding:0 !important;max-width:100% !important;}
+
+  #sheet{
+    background:#fff !important;border:1px solid #ccc !important;
+    display:grid;grid-template-columns:180px 1fr;
+    break-inside:avoid;
+  }
+
+  #col-left{border-right:1px solid #ccc !important;}
+  #avatar-zone{border-bottom:1px solid #ccc !important;background:#f5f5f5 !important;}
+  #avatar-overlay{display:none !important;}
+  #class-emblem{border-bottom:1px solid #ccc !important;}
+
+  .left-field{border-bottom:1px solid #eee !important;}
+  .lf-label{color:#999 !important;}
+  .lf-input{color:#111 !important;}
+  .lf-select{background:#fff !important;border-color:#ccc !important;color:#111 !important;}
+
+  #powers-block{border-top:1px solid #eee !important;}
+  .pb-title{color:#999 !important;}
+  .pi-name{color:#6b5fff !important;}
+  .pi-input{color:#111 !important;border-bottom:1px solid #eee !important;}
+
+  #sheet-header{border-bottom:1px solid #ccc !important;}
+  .sh-title{color:#999 !important;}
+  .sh-logo{color:#111 !important;}
+
+  .section-label{color:#999 !important;}
+  .attr-block{background:#f9f9f9 !important;border-color:#ddd !important;}
+  .attr-name{color:#999 !important;}
+  .attr-val{color:#222 !important;}
+  .attr-sub{color:#bbb !important;}
+  .attr-block.atq{border-color:#ffaaaa !important;}
+  .attr-block.res{border-color:#aaffdd !important;}
+  .attr-block.sab{border-color:#ddaaff !important;}
+  .attr-block.agi{border-color:#aaaaff !important;}
+
+  .derived-block{background:#f9f9f9 !important;border-color:#ddd !important;}
+  .db-label{color:#999 !important;}
+  .db-val{color:#222 !important;}
+  .db-val.hp-color{color:#00aa77 !important;}
+  .db-val.wp-color{color:#7700cc !important;}
+  .db-formula{color:#bbb !important;}
+
+  .bar-label{color:#999 !important;}
+  .bar-current.hp-c{color:#00aa77 !important;}
+  .bar-current.wp-c{color:#7700cc !important;}
+  .bar-max{color:#999 !important;}
+  .bar-track{background:#eee !important;height:6px !important;}
+  .bar-fill.hp{background:#00aa77 !important;}
+  .bar-fill.wp{background:#7700cc !important;}
+  .pip{border-color:#ccc !important;}
+  .pip.filled.hp{background:#00aa77 !important;border-color:#00aa77 !important;}
+  .pip.filled.wp{background:#7700cc !important;border-color:#7700cc !important;}
+
+  .equip-name-input{color:#111 !important;border-bottom:1px solid #ddd !important;}
+  .bonus-chip{background:#f9f9f9 !important;border-color:#ddd !important;}
+  .bc-label{color:#999 !important;}
+  .bc-val{color:#111 !important;}
+
+  .xp-label{color:#999 !important;}
+  .xp-input{color:#111 !important;border-bottom:1px solid #ddd !important;}
+  .notes-ta{color:#111 !important;border-color:#ddd !important;}
+  .emblem-class{color:#333 !important;}
+  .emblem-type{color:#6b5fff !important;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <h1>⚡ Ficha de Personagem</h1>
+  <div class="tb-btns">
+    <button class="tb-btn load" onclick="loadSheet()">📂 Carregar</button>
+    <button class="tb-btn save" onclick="saveSheet()">💾 Salvar</button>
+    <button class="tb-btn print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+    <button class="tb-btn clear" onclick="clearSheet()">✕ Limpar</button>
+  </div>
+</div>
+
+<!-- SHEET -->
+<div id="sheet-wrap">
+<div id="sheet">
+
+  <!-- LEFT COLUMN -->
+  <div id="col-left">
+
+    <!-- Avatar -->
+    <div id="avatar-zone" onclick="document.getElementById('avatar-input').click()">
+      <img id="avatar-img" src="" alt="" style="display:none"/>
+      <div id="avatar-placeholder">🧑</div>
+      <div id="avatar-overlay">
+        <span>📷 Trocar imagem</span>
+      </div>
+    </div>
+    <input type="file" id="avatar-input" accept="image/*" onchange="loadAvatar(event)"/>
+
+    <!-- Class emblem -->
+    <div id="class-emblem">
+      <span class="emblem-emoji" id="emblem-emoji">❓</span>
+      <div class="emblem-class" id="emblem-class">Classe</div>
+      <div class="emblem-type" id="emblem-type">Tipo</div>
+    </div>
+
+    <!-- Identity fields -->
+    <div class="left-field">
+      <div class="lf-label">Nome</div>
+      <input class="lf-input" id="f-name" type="text" placeholder="Nome do personagem" maxlength="30" oninput="autoSave()"/>
+    </div>
+    <div class="left-field">
+      <div class="lf-label">Sexo</div>
+      <select class="lf-select" id="f-sex" onchange="autoSave()">
+        <option value="">—</option>
+        <option value="M">Masculino</option>
+        <option value="F">Feminino</option>
+      </select>
+    </div>
+    <div class="left-field">
+      <div class="lf-label">Classe</div>
+      <select class="lf-select" id="f-class" onchange="onClassChange()">
+        <option value="">— Escolha —</option>
+        <option value="Guerreiro">⚔️ Guerreiro</option>
+        <option value="Cavaleiro">🛡️ Cavaleiro</option>
+        <option value="Mago">✨ Mago</option>
+        <option value="Clérigo">✝️ Clérigo</option>
+        <option value="Caçador">🏹 Caçador</option>
+        <option value="Ladino">🗡️ Ladino</option>
+      </select>
+    </div>
+    <div class="left-field">
+      <div class="lf-label">Tipo</div>
+      <select class="lf-select" id="f-type" onchange="onTypeChange()">
+        <option value="">— Escolha —</option>
+        <option>O Novato</option><option>O Lutador</option><option>O Valentão</option>
+        <option>O Líder</option><option>O Durão</option><option>O Casca-Grossa</option>
+        <option>O Metódico</option><option>O Nerd</option><option>O Estudioso</option>
+        <option>O Artista</option><option>O Popular</option><option>O Rebelde</option>
+        <option>O Jogador</option>
+      </select>
+    </div>
+    <div class="left-field">
+      <div class="lf-label">Aparência</div>
+      <input class="lf-input" id="f-appearance" type="text" placeholder="Descrição física" maxlength="60" oninput="autoSave()"/>
+    </div>
+    <div class="left-field">
+      <div class="lf-label">Identidade</div>
+      <input class="lf-input" id="f-identity" type="text" placeholder="Auto-calculada" readonly style="color:var(--accent2)"/>
+    </div>
+
+    <!-- Powers -->
+    <div id="powers-block">
+      <div class="pb-title">Poderes</div>
+      <div class="power-item">
+        <div class="pi-name">◆ Poder 1</div>
+        <input class="pi-input" id="f-power1" type="text" placeholder="Nome e nível" oninput="autoSave()"/>
+      </div>
+      <div class="power-item">
+        <div class="pi-name">◆ Poder 2</div>
+        <input class="pi-input" id="f-power2" type="text" placeholder="Nome e nível" oninput="autoSave()"/>
+      </div>
+      <div class="power-item">
+        <div class="pi-name">◆ Poder 3</div>
+        <input class="pi-input" id="f-power3" type="text" placeholder="Opcional" oninput="autoSave()"/>
+      </div>
+    </div>
+
+  </div><!-- /col-left -->
+
+  <!-- RIGHT COLUMN -->
+  <div id="col-right">
+
+    <div id="sheet-header">
+      <div class="sh-title">Ficha de Personagem — Sistema 4C</div>
+      <div class="sh-logo">HERÓIS IMPROVÁVEIS</div>
+    </div>
+
+    <!-- ATTRIBUTES -->
+    <div id="attr-section">
+      <div class="section-label">Atributos</div>
+      <div class="attr-row">
+        <div class="attr-block atq">
+          <div class="attr-name">ATQ</div>
+          <input class="attr-val" id="a-atq" type="number" min="0" max="20" placeholder="0" oninput="onAttrChange()"/>
+          <div class="attr-sub">Ataque · Precisão</div>
+        </div>
+        <div class="attr-block res">
+          <div class="attr-name">RES</div>
+          <input class="attr-val" id="a-res" type="number" min="0" max="20" placeholder="0" oninput="onAttrChange()"/>
+          <div class="attr-sub">Resistência · Força</div>
+        </div>
+        <div class="attr-block sab">
+          <div class="attr-name">SAB</div>
+          <input class="attr-val" id="a-sab" type="number" min="0" max="20" placeholder="0" oninput="onAttrChange()"/>
+          <div class="attr-sub">Sabedoria · Magia</div>
+        </div>
+        <div class="attr-block agi">
+          <div class="attr-name">AGI</div>
+          <input class="attr-val" id="a-agi" type="number" min="0" max="20" placeholder="0" oninput="onAttrChange()"/>
+          <div class="attr-sub">Agilidade · Reflexo</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-family:var(--font-m);font-size:.6rem;color:var(--muted)">
+        Total: <span id="attr-total" style="color:var(--accent)">0</span> / 20 pts
+        &nbsp;·&nbsp; Classe: <span id="attr-cls-pts" style="color:var(--accent2)">0</span> pts
+        &nbsp;·&nbsp; Tipo: <span id="attr-type-pts" style="color:var(--accent2)">0</span> pts
+      </div>
+    </div>
+
+    <!-- DERIVED -->
+    <div id="derived-section">
+      <div class="section-label">Ficha de Combate</div>
+      <div class="derived-grid">
+        <div class="derived-block">
+          <div class="db-label">Iniciativa</div>
+          <div class="db-val" id="d-ini">—</div>
+          <div class="db-formula">2 + AGI + bônus</div>
+        </div>
+        <div class="derived-block">
+          <div class="db-label">Jogada de Ataque</div>
+          <div class="db-val" id="d-atq">—</div>
+          <div class="db-formula">ATQ + bônus arma</div>
+        </div>
+        <div class="derived-block">
+          <div class="db-label">Defesa</div>
+          <div class="db-val" id="d-def">—</div>
+          <div class="db-formula">4 + RES + bônus</div>
+        </div>
+        <div class="derived-block">
+          <div class="db-label">Res. Mágica</div>
+          <div class="db-val" id="d-rmag">—</div>
+          <div class="db-formula">4 + SAB</div>
+        </div>
+        <div class="derived-block">
+          <div class="db-label">Dano Físico</div>
+          <div class="db-val" id="d-dfis">—</div>
+          <div class="db-formula">bônus de arma</div>
+        </div>
+        <div class="derived-block">
+          <div class="db-label">Dano Mágico</div>
+          <div class="db-val" id="d-dmag">—</div>
+          <div class="db-formula">bônus de arma</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIT / VON -->
+    <div id="bars-section">
+      <div class="bar-row">
+        <div class="bar-header">
+          <div class="bar-label">Vitalidade</div>
+          <div class="bar-inputs">
+            <input class="bar-current hp-c" id="vit-cur" type="number" min="0" placeholder="—" oninput="updateBars()"/>
+            <span class="bar-sep">/</span>
+            <span class="bar-max" id="vit-max">—</span>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill hp" id="bar-hp" style="width:100%"></div></div>
+        <div class="pip-row" id="pip-hp"></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-header">
+          <div class="bar-label">Vontade</div>
+          <div class="bar-inputs">
+            <input class="bar-current wp-c" id="von-cur" type="number" min="0" placeholder="—" oninput="updateBars()"/>
+            <span class="bar-sep">/</span>
+            <span class="bar-max" id="von-max">—</span>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill wp" id="bar-wp" style="width:100%"></div></div>
+        <div class="pip-row" id="pip-wp"></div>
+      </div>
+    </div>
+
+    <!-- EQUIPMENT -->
+    <div id="equip-section">
+      <div class="section-label">Equipamento</div>
+
+      <div class="lf-label" style="margin-bottom:4px">Equipamento Principal</div>
+      <select class="lf-select" id="eq-select" onchange="onEquipSelect(1)" style="width:100%;margin-bottom:8px">
+        <option value="">— Selecione a classe primeiro —</option>
+      </select>
+      <div class="equip-bonus-row" id="eq-chips">
+        <div class="bonus-chip"><div class="bc-label">ATQ</div><div class="bc-val" id="eq-atq">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">INI</div><div class="bc-val" id="eq-ini">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">DEF</div><div class="bc-val" id="eq-def">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">D.Fís</div><div class="bc-val" id="eq-fis">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">D.Mag</div><div class="bc-val" id="eq-mag">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">R.Mag</div><div class="bc-val" id="eq-rmag">—</div></div>
+      </div>
+
+      <div class="lf-label" style="margin-bottom:4px;margin-top:4px">Equipamento Secundário <span style="color:var(--muted);font-size:.6em">(classes que abrem mão da arma)</span></div>
+      <select class="lf-select" id="eq2-select" onchange="onEquipSelect(2)" style="width:100%;margin-bottom:8px">
+        <option value="">— Nenhum —</option>
+      </select>
+      <div class="equip-bonus-row" id="eq2-chips">
+        <div class="bonus-chip"><div class="bc-label">ATQ</div><div class="bc-val" id="eq2-atq">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">INI</div><div class="bc-val" id="eq2-ini">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">DEF</div><div class="bc-val" id="eq2-def">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">D.Fís</div><div class="bc-val" id="eq2-fis">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">D.Mag</div><div class="bc-val" id="eq2-mag">—</div></div>
+        <div class="bonus-chip"><div class="bc-label">R.Mag</div><div class="bc-val" id="eq2-rmag">—</div></div>
+      </div>
+    </div>
+
+    <!-- XP + NOTES -->
+    <div id="bottom-section">
+      <div class="xp-block">
+        <div class="section-label">Experiência</div>
+        <div class="xp-row">
+          <div class="xp-label">XP Total</div>
+          <input class="xp-input" id="xp-total" type="number" min="0" placeholder="0" oninput="autoSave()"/>
+        </div>
+        <div class="xp-row">
+          <div class="xp-label">XP Gasto</div>
+          <input class="xp-input" id="xp-spent" type="number" min="0" placeholder="0" oninput="autoSave()"/>
+        </div>
+        <div class="xp-row">
+          <div class="xp-label">XP Disp.</div>
+          <div style="font-family:var(--font-m);font-size:.85rem;color:var(--accent)" id="xp-avail">0</div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="section-label" style="margin-bottom:6px">Evolução</div>
+          <div style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);line-height:1.8">
+            Atributo (até 9): <span style="color:var(--text)">10 XP</span><br>
+            Atributo (9→12): <span style="color:var(--text)">20 XP</span><br>
+            Adquirir poder: <span style="color:var(--text)">5 XP</span><br>
+            Remover complicador: <span style="color:var(--text)">10 XP</span>
+          </div>
+        </div>
+      </div>
+      <div class="notes-block">
+        <div class="section-label" style="margin-bottom:6px">Anotações</div>
+        <textarea class="notes-ta" id="f-notes" placeholder="Histórico, motivações, aliados, inimigos..." oninput="autoSave()"></textarea>
+      </div>
+    </div>
+
+  </div><!-- /col-right -->
+</div><!-- /sheet -->
+</div><!-- /sheet-wrap -->
+
+<script>
+// ══ DATA ══
+const CLASS_DATA={
+  Guerreiro:{emoji:'⚔️',attrs:{ATQ:3,RES:3,SAB:1,AGI:1},
+    powers:['Ataque Especial 2 (usa RES no ataque)','Bônus Situacional 2 (força bruta)',''],
+    equip1:['Espada','Espada de Duas Mãos','Duas Espadas','Machado','Machado de Duas Mãos','Dois Machados','Martelo','Martelo de Duas Mãos','Montante','Mangual','Sem Arma'],
+    equip2:[]},
+  Cavaleiro:{emoji:'🛡️',attrs:{ATQ:1,RES:3,SAB:1,AGI:3},
+    powers:['Escudo de Força 2','Bônus Situacional 2 (vigor físico)',''],
+    equip1:['Escudo de Combate','Escudos Duplos','Espada e Escudo','Lança e Escudo','Machado e Escudo','Martelo e Escudo'],
+    equip2:[]},
+  Mago:{emoji:'✨',attrs:{ATQ:1,RES:1,SAB:3,AGI:3},
+    powers:['Ataque Mágico 2','Escudo Mágico 2',''],
+    equip1:['Cajado','Grimório','Amuleto'],
+    equip2:[]},
+  Clérigo:{emoji:'✝️',attrs:{ATQ:1,RES:3,SAB:3,AGI:1},
+    powers:['Cura 2','Escudo Mágico 2',''],
+    equip1:['Armadura de Couro','Cota de Malha','Meia Armadura','Armadura Pesada'],
+    equip2:[]},
+  Caçador:{emoji:'🏹',attrs:{ATQ:3,RES:1,SAB:3,AGI:1},
+    powers:['Ataque Paralisante 2','Bônus Situacional 2 (armar/desarmar armadilhas)',''],
+    equip1:['Arco','Besta','Adaga','Duas Adagas','Lança'],
+    equip2:[]},
+  Ladino:{emoji:'🗡️',attrs:{ATQ:3,RES:1,SAB:1,AGI:3},
+    powers:['Ataque Especial 2 (usa AGI no ataque)','Bônus Situacional 2 (abrir fechaduras)',''],
+    equip1:['Adaga','Duas Adagas','Chicote'],
+    equip2:[]}
+};
+
+const TYPE_DATA={
+  'O Novato':{ATQ:3,RES:3,SAB:3,AGI:3},'O Lutador':{ATQ:4,RES:2,SAB:3,AGI:3},
+  'O Valentão':{ATQ:4,RES:3,SAB:2,AGI:3},'O Líder':{ATQ:4,RES:3,SAB:3,AGI:2},
+  'O Durão':{ATQ:2,RES:4,SAB:3,AGI:3},'O Casca-Grossa':{ATQ:3,RES:4,SAB:2,AGI:3},
+  'O Metódico':{ATQ:3,RES:4,SAB:3,AGI:2},'O Nerd':{ATQ:2,RES:3,SAB:4,AGI:3},
+  'O Estudioso':{ATQ:3,RES:2,SAB:4,AGI:3},'O Artista':{ATQ:3,RES:3,SAB:4,AGI:2},
+  'O Popular':{ATQ:2,RES:3,SAB:3,AGI:4},'O Rebelde':{ATQ:3,RES:2,SAB:3,AGI:4},
+  'O Jogador':{ATQ:3,RES:3,SAB:2,AGI:4}
+};
+
+const EQUIP_STATS={
+  'Espada':{ATQ:1,FIS:1,MAG:2},'Espada de Duas Mãos':{ATQ:1,INI:-1,FIS:2,MAG:2},
+  'Duas Espadas':{ATQ:2,INI:1,FIS:1},'Machado':{ATQ:1,FIS:2,MAG:1},
+  'Machado de Duas Mãos':{ATQ:1,INI:-1,FIS:3,MAG:1},'Dois Machados':{ATQ:1,INI:1,FIS:2},
+  'Martelo':{ATQ:1,FIS:2,MAG:1},'Martelo de Duas Mãos':{ATQ:1,INI:-1,FIS:3,MAG:1},
+  'Montante':{ATQ:2,INI:-2,FIS:4},'Mangual':{ATQ:1,INI:-1,FIS:3,MAG:1},
+  'Sem Arma':{ATQ:1,INI:2,DEF:1},
+  'Escudo de Combate':{ATQ:1,DEF:3},'Escudos Duplos':{INI:-1,DEF:4,MAG:1},
+  'Espada e Escudo':{ATQ:1,DEF:2,FIS:1},'Lança e Escudo':{ATQ:2,DEF:2},
+  'Machado e Escudo':{ATQ:1,DEF:2,FIS:2,MAG:-1},'Martelo e Escudo':{ATQ:1,DEF:2,FIS:2,MAG:-1},
+  'Cajado':{MAG:4},'Grimório':{MAG:4},'Amuleto':{MAG:4},
+  'Arco':{ATQ:3,FIS:1},'Besta':{ATQ:3,FIS:1},
+  'Adaga':{ATQ:1,INI:1,FIS:2},'Duas Adagas':{ATQ:2,INI:1,FIS:1},
+  'Lança':{ATQ:2,MAG:2},'Chicote':{ATQ:1,INI:1,FIS:1,MAG:1},
+  'Armadura de Couro':{DEF:3,INI:1},'Cota de Malha':{DEF:4},
+  'Meia Armadura':{DEF:5,INI:-1},'Armadura Pesada':{DEF:6,INI:-2},
+};
+
+let avatarBase64='';
+
+// ══ HELPERS ══
+function v(id){const el=document.getElementById(id);return parseInt(el?.value||el?.textContent)||0;}
+function vt(id){return document.getElementById(id)?.value||'';}
+function setEl(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+
+function bonusStr(val){
+  if(!val||val===0) return '—';
+  return val>0?'+'+val:String(val);
+}
+
+// ══ FILL EQUIP CHIPS ══
+function fillChips(prefix, statsObj){
+  const s=statsObj||{};
+  setEl(prefix+'-atq', bonusStr(s.ATQ));
+  setEl(prefix+'-ini', bonusStr(s.INI));
+  setEl(prefix+'-def', bonusStr(s.DEF));
+  setEl(prefix+'-fis', bonusStr(s.FIS));
+  setEl(prefix+'-mag', bonusStr(s.MAG));
+  setEl(prefix+'-rmag', bonusStr(s.RMAG));
+}
+
+// ══ POPULATE EQUIP DROPDOWNS ══
+function populateEquipDropdowns(cls){
+  const cd=CLASS_DATA[cls];
+  const sel1=document.getElementById('eq-select');
+  const sel2=document.getElementById('eq2-select');
+  sel1.innerHTML='<option value="">— Escolha —</option>';
+  sel2.innerHTML='<option value="">— Nenhum —</option>';
+
+  if(!cd){ fillChips('eq',{}); fillChips('eq2',{}); return; }
+
+  cd.equip1.forEach(name=>{
+    const o=document.createElement('option'); o.value=name; o.textContent=name;
+    sel1.appendChild(o);
+  });
+
+  // equip2: armaduras disponíveis para quem abriu mão da arma
+  // Clérigo já escolhe armadura no equip1, os demais não têm equip2
+  // Mas vamos oferecer armaduras como secundário para quem quiser (opcional)
+  if(cd.equip1[0] && !['Armadura de Couro','Cota de Malha','Meia Armadura','Armadura Pesada'].includes(cd.equip1[0])){
+    // Não tem armadura no slot 1 — oferecer no slot 2
+    ['Armadura de Couro','Cota de Malha','Meia Armadura','Armadura Pesada'].forEach(name=>{
+      const o=document.createElement('option'); o.value=name; o.textContent=name;
+      sel2.appendChild(o);
+    });
+  }
+
+  fillChips('eq',{}); fillChips('eq2',{});
+}
+
+// ══ EQUIP SELECT ══
+function onEquipSelect(slot){
+  const sel=document.getElementById(slot===1?'eq-select':'eq2-select');
+  const name=sel.value;
+  const stats=EQUIP_STATS[name]||{};
+  fillChips(slot===1?'eq':'eq2', stats);
+  recalcAll();
+}
+
+// ══ HELPERS ══
+function v(id){return parseInt(document.getElementById(id)?.value)||0;}
+function vt(id){return document.getElementById(id)?.value||'';}
+function setEl(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+
+// ══ AVATAR ══
+function loadAvatar(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    avatarBase64=ev.target.result;
+    document.getElementById('avatar-img').src=avatarBase64;
+    document.getElementById('avatar-img').style.display='block';
+    document.getElementById('avatar-placeholder').style.display='none';
+    autoSave();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ══ CLASS CHANGE ══
+function onClassChange(){
+  const cls=vt('f-class');
+  const data=CLASS_DATA[cls];
+  if(data){
+    document.getElementById('emblem-emoji').textContent=data.emoji;
+    document.getElementById('emblem-class').textContent=cls;
+    document.getElementById('f-power1').value=data.powers[0];
+    document.getElementById('f-power2').value=data.powers[1];
+    document.getElementById('f-power3').value=data.powers[2]||'';
+  } else {
+    document.getElementById('emblem-emoji').textContent='❓';
+    document.getElementById('emblem-class').textContent='Classe';
+  }
+  populateEquipDropdowns(cls);
+  fillAttrs();
+  recalcAll();
+}
+
+// ══ TYPE CHANGE ══
+function onTypeChange(){
+  const typ=vt('f-type');
+  document.getElementById('emblem-type').textContent=typ||'Tipo';
+  fillAttrs();
+  recalcAll();
+}
+
+// ══ FILL ATTRS FROM CLASS + TYPE ══
+function fillAttrs(){
+  const cls=vt('f-class'), typ=vt('f-type');
+  const cd=CLASS_DATA[cls], td=TYPE_DATA[typ];
+  if(!cd && !td) return;
+  const ca=cd?.attrs||{ATQ:0,RES:0,SAB:0,AGI:0};
+  const ta=td||{ATQ:0,RES:0,SAB:0,AGI:0};
+  document.getElementById('a-atq').value=(ca.ATQ||0)+(ta.ATQ||0)||'';
+  document.getElementById('a-res').value=(ca.RES||0)+(ta.RES||0)||'';
+  document.getElementById('a-sab').value=(ca.SAB||0)+(ta.SAB||0)||'';
+  document.getElementById('a-agi').value=(ca.AGI||0)+(ta.AGI||0)||'';
+  // Reset VIT/VON current so they recalculate from new max
+  document.getElementById('vit-cur').value='';
+  document.getElementById('von-cur').value='';
+}
+
+// ══ ATTR CHANGE ══
+function onAttrChange(){ recalcAll(); }
+
+// ══ RECALC ALL ══
+function getChipVal(id){
+  const t=document.getElementById(id)?.textContent||'—';
+  if(t==='—') return 0;
+  return parseInt(t)||0;
+}
+
+function recalcAll(){
+  const atq=v('a-atq'), res=v('a-res'), sab=v('a-sab'), agi=v('a-agi');
+  const total=atq+res+sab+agi;
+
+  const cls=vt('f-class'), typ=vt('f-type');
+  const cd=CLASS_DATA[cls], td=TYPE_DATA[typ];
+  const clsPts=cd?Object.values(cd.attrs).reduce((a,b)=>a+b,0):0;
+  const typPts=td?Object.values(td).reduce((a,b)=>a+b,0):0;
+  setEl('attr-total',total);
+  setEl('attr-cls-pts',clsPts);
+  setEl('attr-type-pts',typPts);
+
+  // Identity
+  const max=Math.max(atq,res,sab,agi);
+  const tied=[atq,res,sab,agi].filter(x=>x===max).length;
+  const identity=tied>1?'Versátil':atq===max?'Dominante':res===max?'Tanque':sab===max?'Intelectual':'Veloz';
+  document.getElementById('f-identity').value=identity;
+
+  // Equipment bonuses from chips
+  const eAtq=getChipVal('eq-atq')+getChipVal('eq2-atq');
+  const eIni=getChipVal('eq-ini')+getChipVal('eq2-ini');
+  const eDef=getChipVal('eq-def')+getChipVal('eq2-def');
+  const eFis=getChipVal('eq-fis')+getChipVal('eq2-fis');
+  const eMag=getChipVal('eq-mag')+getChipVal('eq2-mag');
+  const eRmag=getChipVal('eq-rmag')+getChipVal('eq2-rmag');
+
+  // Derived
+  const ini=2+agi+eIni;
+  const jAtq=atq+eAtq;
+  const def=4+res+eDef;
+  const rmag=4+sab+eRmag;
+  const vitMax=10+Math.floor(res/2);
+  const vonMax=10+Math.floor(sab/2);
+
+  setEl('d-ini', ini||'—');
+  setEl('d-atq', jAtq||'—');
+  setEl('d-def', def||'—');
+  setEl('d-rmag', rmag||'—');
+  setEl('d-dfis', eFis?'+'+eFis:'—');
+  setEl('d-dmag', eMag?'+'+eMag:'—');
+
+  document.getElementById('vit-max').textContent=vitMax||'—';
+  document.getElementById('von-max').textContent=vonMax||'—';
+
+  if(!document.getElementById('vit-cur').value && vitMax) document.getElementById('vit-cur').value=vitMax;
+  if(!document.getElementById('von-cur').value && vonMax) document.getElementById('von-cur').value=vonMax;
+
+  updateBars();
+  buildPips();
+  updateXP();
+  autoSave();
+}
+
+// ══ BARS ══
+function updateBars(){
+  const vitMax=parseInt(document.getElementById('vit-max').textContent)||1;
+  const vonMax=parseInt(document.getElementById('von-max').textContent)||1;
+  const vitCur=parseInt(document.getElementById('vit-cur').value)||0;
+  const vonCur=parseInt(document.getElementById('von-cur').value)||0;
+  document.getElementById('bar-hp').style.width=Math.max(0,Math.min(100,vitCur/vitMax*100))+'%';
+  document.getElementById('bar-wp').style.width=Math.max(0,Math.min(100,vonCur/vonMax*100))+'%';
+  updatePips();
+  autoSave();
+}
+
+// ══ PIPS ══
+function buildPips(){
+  const vitMax=parseInt(document.getElementById('vit-max').textContent)||0;
+  const vonMax=parseInt(document.getElementById('von-max').textContent)||0;
+  const vitCur=parseInt(document.getElementById('vit-cur').value)||vitMax;
+  const vonCur=parseInt(document.getElementById('von-cur').value)||vonMax;
+  buildPipRow('pip-hp',vitMax,vitCur,'hp','vit-cur');
+  buildPipRow('pip-wp',vonMax,vonCur,'wp','von-cur');
+}
+
+function buildPipRow(containerId,max,cur,cls,inputId){
+  const c=document.getElementById(containerId); c.innerHTML='';
+  for(let i=1;i<=max;i++){
+    const pip=document.createElement('div');
+    pip.className='pip'+(i<=cur?' filled '+cls:'');
+    pip.onclick=(()=>{
+      const idx=i;
+      return ()=>{
+        const input=document.getElementById(inputId);
+        const current=parseInt(input.value)||0;
+        input.value=current===idx?idx-1:idx;
+        updateBars();
+      };
+    })();
+    c.appendChild(pip);
+  }
+}
+
+function updatePips(){
+  const vitMax=parseInt(document.getElementById('vit-max').textContent)||0;
+  const vonMax=parseInt(document.getElementById('von-max').textContent)||0;
+  const vitCur=parseInt(document.getElementById('vit-cur').value)||0;
+  const vonCur=parseInt(document.getElementById('von-cur').value)||0;
+  document.querySelectorAll('#pip-hp .pip').forEach((p,i)=>{
+    p.className='pip'+(i<vitCur?' filled hp':'');
+  });
+  document.querySelectorAll('#pip-wp .pip').forEach((p,i)=>{
+    p.className='pip'+(i<vonCur?' filled wp':'');
+  });
+}
+
+// ══ XP ══
+function updateXP(){
+  const tot=v('xp-total'), spent=v('xp-spent');
+  document.getElementById('xp-avail').textContent=Math.max(0,tot-spent);
+}
+
+// ══ SAVE ══
+let autoSaveTimer=null;
+function autoSave(){
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer=setTimeout(()=>localStorage.setItem('hi_sheet',JSON.stringify(collectData())),800);
+}
+
+function collectData(){
+  return {
+    name:vt('f-name'),sex:vt('f-sex'),cls:vt('f-class'),type:vt('f-type'),
+    appearance:vt('f-appearance'),
+    atq:vt('a-atq'),res:vt('a-res'),sab:vt('a-sab'),agi:vt('a-agi'),
+    vitCur:vt('vit-cur'),vonCur:vt('von-cur'),
+    eq1:vt('eq-select'), eq2:vt('eq2-select'),
+    power1:vt('f-power1'),power2:vt('f-power2'),power3:vt('f-power3'),
+    xpTotal:vt('xp-total'),xpSpent:vt('xp-spent'),
+    notes:vt('f-notes'),
+    avatar:avatarBase64,
+  };
+}
+
+function applyData(d){
+  if(!d) return;
+  const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined)el.value=val;};
+  set('f-name',d.name);set('f-sex',d.sex);set('f-class',d.cls);set('f-type',d.type);
+  set('f-appearance',d.appearance);
+  set('f-power1',d.power1);set('f-power2',d.power2);set('f-power3',d.power3);
+  set('xp-total',d.xpTotal);set('xp-spent',d.xpSpent);
+  set('f-notes',d.notes);
+  if(d.avatar){
+    avatarBase64=d.avatar;
+    document.getElementById('avatar-img').src=d.avatar;
+    document.getElementById('avatar-img').style.display='block';
+    document.getElementById('avatar-placeholder').style.display='none';
+  }
+  // Set class/type first (fills powers, dropdowns, attrs)
+  onClassChange();
+  onTypeChange();
+  // Override attrs with saved values if present (handles manual edits / XP evolution)
+  if(d.atq) set('a-atq',d.atq);
+  if(d.res) set('a-res',d.res);
+  if(d.sab) set('a-sab',d.sab);
+  if(d.agi) set('a-agi',d.agi);
+  // Restore equipment
+  if(d.eq1){ document.getElementById('eq-select').value=d.eq1; onEquipSelect(1); }
+  if(d.eq2){ document.getElementById('eq2-select').value=d.eq2; onEquipSelect(2); }
+  recalcAll();
+  // Restore current VIT/VON after recalc sets max
+  if(d.vitCur) document.getElementById('vit-cur').value=d.vitCur;
+  if(d.vonCur) document.getElementById('von-cur').value=d.vonCur;
+  updateBars();
+}
+
+function saveSheet(){
+  const data=collectData();
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const name=data.name||'personagem';
+  a.href=url; a.download=`ficha_${name.replace(/\s+/g,'_')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function loadSheet(){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='.json';
+  input.onchange=async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    try{
+      const text=await file.text();
+      applyData(JSON.parse(text));
+    }catch(err){alert('Erro ao carregar ficha: '+err.message);}
+  };
+  input.click();
+}
+
+function clearSheet(){
+  if(!confirm('Limpar toda a ficha?')) return;
+  avatarBase64='';
+  document.getElementById('avatar-img').src='';
+  document.getElementById('avatar-img').style.display='none';
+  document.getElementById('avatar-placeholder').style.display='block';
+  document.querySelectorAll('input[type=text],input[type=number],select,textarea').forEach(el=>{el.value='';});
+  document.getElementById('eq-select').innerHTML='<option value="">— Escolha a classe primeiro —</option>';
+  document.getElementById('eq2-select').innerHTML='<option value="">— Nenhum —</option>';
+  ['eq','eq2'].forEach(p=>fillChips(p,{}));
+  document.getElementById('emblem-emoji').textContent='❓';
+  document.getElementById('emblem-class').textContent='Classe';
+  document.getElementById('emblem-type').textContent='Tipo';
+  ['d-ini','d-atq','d-def','d-rmag','d-dfis','d-dmag'].forEach(id=>setEl(id,'—'));
+  document.getElementById('vit-max').textContent='—';
+  document.getElementById('von-max').textContent='—';
+  document.getElementById('bar-hp').style.width='100%';
+  document.getElementById('bar-wp').style.width='100%';
+  document.getElementById('pip-hp').innerHTML='';
+  document.getElementById('pip-wp').innerHTML='';
+  document.getElementById('attr-total').textContent='0';
+  document.getElementById('xp-avail').textContent='0';
+  localStorage.removeItem('hi_sheet');
+}
+
+// ══ XP LIVE ══
+document.getElementById('xp-total').addEventListener('input',updateXP);
+document.getElementById('xp-spent').addEventListener('input',updateXP);
+
+// ══ INIT ══
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('hi_sheet');
+  if(saved){ try{ applyData(JSON.parse(saved)); }catch(e){} }
+});
+</script>
+</body>
+</html>

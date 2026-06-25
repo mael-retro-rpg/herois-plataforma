@@ -201,6 +201,8 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     <span class="master-tag">MESTRE</span>
   </div>
   <div class="header-right">
+    <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
+    <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
     <span style="font-family:var(--font-m);font-size:.68rem;color:var(--muted)" id="user-label">—</span>
     <button class="btn btn-danger sm" onclick="logout()">Sair</button>
   </div>
@@ -290,6 +292,24 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   </div>
 </div>
 
+<!-- ADD/REPLACE SHEET MODAL -->
+<div class="modal-overlay" id="add-sheet-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">📄 Gerenciar Ficha</div>
+      <button class="modal-close" onclick="document.getElementById('add-sheet-modal').classList.remove('open')">✕</button>
+    </div>
+    <div id="add-sheet-modal-body"></div>
+    <button class="btn btn-accent full" onclick="document.getElementById('add-sheet-file').click()">📂 Carregar JSON da Ficha</button>
+    <input type="file" id="add-sheet-file" accept=".json" style="display:none" onchange="handleAddSheetFile(event)"/>
+    <div id="add-sheet-preview" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-family:var(--font-d);font-size:.58rem;color:var(--accent);letter-spacing:1px">PRÉVIA</div>
+      <div class="preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8;background:var(--card);padding:8px"></div>
+      <button class="btn btn-accent full" onclick="confirmAddSheet()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -325,6 +345,11 @@ socket.on('sheets_load', list => {
 
 socket.on('sheet_updated', ({ username, sheet }) => {
   sheets[username] = sheet;
+  renderHUD(); renderPlayersTab();
+});
+
+socket.on('sheet_removed', ({ username }) => {
+  delete sheets[username];
   renderHUD(); renderPlayersTab();
 });
 
@@ -475,11 +500,22 @@ function masterUpdateStat(username, field, value) {
 // ── PLAYERS TAB — ficha estilo editorial ──────────────────────────
 function renderPlayersTab() {
   const el = document.getElementById('tab-players');
+  el.innerHTML = '';
+
+  // ── Toolbar de gerenciamento ──
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap';
+  toolbar.innerHTML = `
+    <div style="font-family:var(--font-d);font-size:.6rem;letter-spacing:1px;color:var(--muted)">GERENCIAR FICHAS</div>
+    <button class="btn btn-accent sm" onclick="openAddSheetModal()">➕ Adicionar Ficha</button>
+    <div style="font-family:var(--font-m);font-size:.62rem;color:var(--muted)">${Object.keys(sheets).length} ficha(s) carregada(s)</div>`;
+  el.appendChild(toolbar);
+
   if (Object.keys(sheets).length === 0) {
-    el.innerHTML = '<div style="font-family:var(--font-m);font-size:.75rem;color:var(--muted);padding:20px">Nenhuma ficha enviada ainda.</div>';
+    el.innerHTML += '<div style="font-family:var(--font-m);font-size:.75rem;color:var(--muted)">Nenhuma ficha enviada ainda. Adicione uma ou peça aos jogadores que enviem pelo painel deles.</div>';
     return;
   }
-  el.innerHTML = '';
+
   Object.values(sheets).forEach(s => {
     const d = calcDerived(s);
     const vit = s.vitCur ?? d.vit;
@@ -493,7 +529,13 @@ function renderPlayersTab() {
 
     const card = document.createElement('div');
     card.className = 'sheet-card';
+    card.style.position = 'relative';
     card.innerHTML = `
+      <!-- Botões de ação -->
+      <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5" onclick="event.stopPropagation()">
+        <button class="btn btn-muted sm" onclick="openReplaceSheetModal('${s.username}')" title="Substituir ficha">🔄</button>
+        <button class="btn btn-danger sm" onclick="removeSheet('${s.username}')" title="Remover ficha">✕</button>
+      </div>
       <div class="sc-left">
         ${avatarHTML}
         <div class="sc-identity">
@@ -501,6 +543,7 @@ function renderPlayersTab() {
           <div class="sc-cls">${CLS_EMOJI[s.cls]||''} ${s.cls||'?'}</div>
           <div class="sc-type">${s.type||'?'} · ${s.sex==='M'?'Masculino':s.sex==='F'?'Feminino':'?'}</div>
           ${s.appearance?`<div style="font-size:.58rem;color:var(--muted);margin-top:4px;font-style:italic">${s.appearance}</div>`:''}
+          <div style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);margin-top:4px">👤 ${s.username}</div>
         </div>
         <div class="sc-vit-von">
           <div>
@@ -542,6 +585,77 @@ function renderPlayersTab() {
     card.onclick = () => openSheetPopup(s.username);
     el.appendChild(card);
   });
+}
+
+// ── SHEET MANAGEMENT ──────────────────────────────────────────────
+let addSheetTarget = null; // null = nova ficha, username = substituir
+
+function openAddSheetModal(targetUsername = null) {
+  addSheetTarget = targetUsername;
+  // Build user list for new sheet
+  const modalHTML = targetUsername
+    ? `<p style="font-size:.75rem;color:var(--muted)">Substitua a ficha de <b style="color:var(--accent)">${targetUsername}</b> por um novo JSON.</p>`
+    : `<div class="field" style="margin-bottom:10px">
+        <label>Jogador (usuário)</label>
+        <input class="inp" id="add-sheet-user" type="text" placeholder="username do jogador"/>
+       </div>
+       <p style="font-size:.7rem;color:var(--muted)">Digite o username exato do jogador e carregue o JSON da ficha.</p>`;
+
+  document.getElementById('add-sheet-modal-body').innerHTML = modalHTML;
+  document.getElementById('add-sheet-preview').style.display = 'none';
+  document.getElementById('add-sheet-file').value = '';
+  document.getElementById('add-sheet-modal').classList.add('open');
+}
+
+function openReplaceSheetModal(username) {
+  openAddSheetModal(username);
+}
+
+async function removeSheet(username) {
+  if (!confirm(`Remover a ficha de ${username}?`)) return;
+  try {
+    const res = await fetch(`/api/sheets/${username}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error();
+    toast(`Ficha de ${username} removida`);
+  } catch { toast('Erro ao remover ficha'); }
+}
+
+let pendingAddSheet = null;
+function handleAddSheetFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      pendingAddSheet = JSON.parse(ev.target.result);
+      const prev = document.getElementById('add-sheet-preview');
+      prev.style.display = '';
+      prev.querySelector('.preview-content').innerHTML =
+        `Nome: <b style="color:var(--accent)">${pendingAddSheet.name||'?'}</b><br>
+         Classe: ${pendingAddSheet.cls||'?'} · Tipo: ${pendingAddSheet.type||'?'}<br>
+         ATQ:${pendingAddSheet.atq||0} RES:${pendingAddSheet.res||0} SAB:${pendingAddSheet.sab||0} AGI:${pendingAddSheet.agi||0}`;
+    } catch { toast('Arquivo inválido'); }
+  };
+  reader.readAsText(file);
+}
+
+async function confirmAddSheet() {
+  if (!pendingAddSheet) return;
+  const username = addSheetTarget || document.getElementById('add-sheet-user')?.value.trim();
+  if (!username) { toast('Digite o username do jogador'); return; }
+  try {
+    const res = await fetch(`/api/sheets/${username}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(pendingAddSheet)
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    toast(`✅ Ficha de ${username} ${addSheetTarget?'atualizada':'adicionada'}!`);
+    document.getElementById('add-sheet-modal').classList.remove('open');
+    pendingAddSheet = null;
+  } catch(e) { toast('Erro: ' + e.message); }
 }
 
 // ── NARRATIVE ─────────────────────────────────────────────────────

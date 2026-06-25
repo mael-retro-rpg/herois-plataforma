@@ -151,7 +151,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   <div class="header-right">
     <span class="online-dot"></span>
     <span class="user-name" id="user-label">—</span>
-    <button class="btn btn-muted sm" onclick="openSheetModal()">📄 Ficha</button>
+    <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
+    <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
+    <button class="btn btn-muted sm" onclick="openSheetModal()">⬆ Enviar Ficha</button>
     <button class="btn btn-danger sm" onclick="logout()">Sair</button>
   </div>
 </div>
@@ -266,6 +268,11 @@ socket.on('sheet_updated', ({ username, sheet }) => {
   sheets[username] = sheet;
   renderHUD();
   if (username === me.username) buildAttrBtns();
+});
+
+socket.on('sheet_removed', ({ username }) => {
+  delete sheets[username];
+  renderHUD();
 });
 
 socket.on('message', msg => {
