@@ -59,6 +59,20 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* CENTER */
 #master-center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Session toolbar */
+#session-toolbar {
+  display: flex; gap: 6px; padding: 6px 12px;
+  border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0;
+}
+.stb-btn {
+  font-family: var(--font-d); font-size: .52rem; letter-spacing: 1px;
+  padding: 5px 10px; border: 1px solid var(--border2); background: transparent;
+  color: var(--muted); cursor: pointer; transition: .2s; text-transform: uppercase;
+}
+.stb-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.stb-btn.danger:hover { border-color: var(--accent3); color: var(--accent3); }
+.stb-btn.active { border-color: var(--accent); color: var(--accent); }
 #log {
   flex: 1; overflow-y: auto; padding: 14px 18px;
   display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
@@ -230,6 +244,11 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
     <!-- CENTER -->
     <div id="master-center">
+      <div id="session-toolbar">
+        <button class="stb-btn" onclick="openIntroModal()" title="Narração de abertura que aparece para jogadores ao entrar">🎬 Abertura</button>
+        <button class="stb-btn" onclick="saveLog()" title="Salvar log da sessão como arquivo de texto">💾 Salvar Log</button>
+        <button class="stb-btn danger" onclick="clearLog()" title="Limpar mensagens do log (não apaga o histórico salvo)">🗑 Limpar</button>
+      </div>
       <div id="log">
         <div class="msg-system">[ Aguardando conexão dos jogadores... ]</div>
       </div>
@@ -307,6 +326,28 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
       <div class="preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8;background:var(--card);padding:8px"></div>
       <button class="btn btn-accent full" onclick="confirmAddSheet()">✓ Confirmar</button>
     </div>
+  </div>
+</div>
+
+<!-- INTRO ADVENTURE MODAL (mestre define) -->
+<div class="modal-overlay" id="intro-modal">
+  <div class="modal-box" style="width:500px;max-width:95vw">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🎬 Narração de Abertura</div>
+      <button class="modal-close" onclick="document.getElementById('intro-modal').classList.remove('open')">✕</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
+      Este texto aparece como <strong style="color:var(--accent)">popup</strong> para cada jogador assim que entrar na sessão. Use para apresentar o cenário, as regras da sessão ou qualquer abertura narrativa.
+    </p>
+    <div class="field">
+      <label>Texto de abertura</label>
+      <textarea class="inp" id="intro-text" rows="8" placeholder="Era uma vez... Digite aqui a narração inicial da aventura. Suporta **markdown**." style="resize:vertical;min-height:140px;font-size:.8rem;line-height:1.6"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-accent full" onclick="saveIntro()">💾 Salvar Abertura</button>
+      <button class="btn btn-danger" onclick="clearIntro()" title="Remover abertura — jogadores não verão mais o popup">✕ Remover</button>
+    </div>
+    <div id="intro-status" style="font-family:var(--font-m);font-size:.62rem;color:var(--muted)"></div>
   </div>
 </div>
 
@@ -658,8 +699,75 @@ async function confirmAddSheet() {
   } catch(e) { toast('Erro: ' + e.message); }
 }
 
-// ── NARRATIVE ─────────────────────────────────────────────────────
-function sendNarrate() {
+// ── LOG TOOLS ────────────────────────────────────────────────────
+function clearLog() {
+  if (!confirm('Limpar o log visível? O histórico salvo no servidor não é apagado.')) return;
+  document.getElementById('log').innerHTML = '<div class="msg-system">[ Log limpo pelo Mestre ]</div>';
+}
+
+function saveLog() {
+  const msgs = document.querySelectorAll('#log > *');
+  const lines = [];
+  const now = new Date().toLocaleString('pt-BR');
+  lines.push(`=== LOG DA SESSÃO — ${now} ===\n`);
+  msgs.forEach(el => {
+    const text = el.innerText || el.textContent;
+    if (text.trim()) lines.push(text.trim());
+  });
+  const blob = new Blob([lines.join('\n\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sessao_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 Log salvo!');
+}
+
+// ── INTRO ADVENTURE ──────────────────────────────────────────────
+function openIntroModal() {
+  // Load current intro from server session data
+  fetch('/api/session', { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(s => {
+      document.getElementById('intro-text').value = s.intro || '';
+      const status = document.getElementById('intro-status');
+      status.textContent = s.intro
+        ? '✅ Abertura ativa — jogadores verão ao entrar'
+        : 'Nenhuma abertura definida';
+    }).catch(() => {});
+  document.getElementById('intro-modal').classList.add('open');
+}
+
+async function saveIntro() {
+  const text = document.getElementById('intro-text').value.trim();
+  if (!text) { toast('Digite o texto de abertura'); return; }
+  try {
+    const res = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ intro: text })
+    });
+    if (!res.ok) throw new Error();
+    document.getElementById('intro-status').textContent = '✅ Abertura ativa — jogadores verão ao entrar';
+    document.getElementById('intro-modal').querySelector('.stb-btn')?.classList.add('active');
+    toast('✅ Abertura salva!');
+  } catch { toast('Erro ao salvar'); }
+}
+
+async function clearIntro() {
+  if (!confirm('Remover a narração de abertura?')) return;
+  try {
+    await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ intro: '' })
+    });
+    document.getElementById('intro-text').value = '';
+    document.getElementById('intro-status').textContent = 'Nenhuma abertura definida';
+    toast('Abertura removida');
+  } catch { toast('Erro'); }
+}
   const inp = document.getElementById('narrate-inp');
   const content = inp.value.trim();
   if (!content) return;
