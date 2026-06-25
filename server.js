@@ -73,8 +73,9 @@ app.post('/api/login', (req, res) => {
 
 // Register player (master only via POST /api/users)
 app.post('/api/users', authMiddleware, masterOnly, (req, res) => {
-  const { username, password, displayName, role } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username e senha obrigatórios' });
+  const { username, displayName, role } = req.body;
+  const password = req.body.password || '12345';
+  if (!username) return res.status(400).json({ error: 'Username obrigatório' });
   const users = readDB('users');
   if (users[username]) return res.status(409).json({ error: 'Usuário já existe' });
   users[username] = {
@@ -149,11 +150,37 @@ app.get('/api/setup', (req, res) => {
 // SHEET ROUTES
 // ══════════════════════════════════════════════════════════════════
 
+function firstPayloadValue(obj, keys) {
+  for (const key of keys) {
+    const value = obj?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+  }
+  return undefined;
+}
+
+function normalizeSheetPayload(payload) {
+  const sheet = { ...(payload || {}) };
+  const danoFisico = firstPayloadValue(sheet, [
+    'danoFisico','danoFis','danoFisicoBonus','danoFisBonus','bonusDanoFisico','bonusDanoFis',
+    'dano_fisico','dano_fis','bonus_dano_fisico','bonus_dano_fis','bdFisico','bdFis',
+    'dmgFis','dmgPhys','physicalDamage','damagePhysical','physDamage','danoFísico','bonusDanoFísico'
+  ]);
+  const danoMagico = firstPayloadValue(sheet, [
+    'danoMagico','danoMag','danoMagicoBonus','danoMagBonus','bonusDanoMagico','bonusDanoMag',
+    'dano_magico','dano_mag','bonus_dano_magico','bonus_dano_mag','bdMagico','bdMag',
+    'dmgMag','dmgMagic','magicDamage','damageMagic','magDamage','danoMágico','bonusDanoMágico'
+  ]);
+  if (danoFisico !== undefined) sheet.danoFisico = danoFisico;
+  if (danoMagico !== undefined) sheet.danoMagico = danoMagico;
+  return sheet;
+}
+
+
 // Save sheet
 app.post('/api/sheets', authMiddleware, (req, res) => {
   const sheets = readDB('sheets');
   sheets[req.user.username] = {
-    ...req.body,
+    ...normalizeSheetPayload(req.body),
     username: req.user.username,
     updatedAt: new Date().toISOString()
   };
@@ -186,7 +213,7 @@ app.patch('/api/sheets/:username', authMiddleware, (req, res) => {
     return res.status(403).json({ error: 'Sem permissão' });
   const sheets = readDB('sheets');
   if (!sheets[req.params.username]) return res.status(404).json({ error: 'Ficha não encontrada' });
-  sheets[req.params.username] = { ...sheets[req.params.username], ...req.body, updatedAt: new Date().toISOString() };
+  sheets[req.params.username] = { ...sheets[req.params.username], ...normalizeSheetPayload(req.body), updatedAt: new Date().toISOString() };
   writeDB('sheets', sheets);
   io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
   res.json({ ok: true });
@@ -206,7 +233,7 @@ app.delete('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
 app.post('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
   const sheets = readDB('sheets');
   sheets[req.params.username] = {
-    ...req.body,
+    ...normalizeSheetPayload(req.body),
     username: req.params.username,
     updatedAt: new Date().toISOString()
   };

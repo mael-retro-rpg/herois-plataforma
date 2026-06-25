@@ -1,0 +1,23 @@
+Correção v3 — senha padrão e alteração de senha
+
+1) server.js
+- Em POST /api/users, a senha passa a ser opcional.
+- Se o mestre não informar senha, o servidor usa "12345".
+- A rota /api/change-password já existe e foi mantida.
+
+2) public/master.html
+- Botão "🔑 Senha" no topo para o mestre alterar a própria senha.
+- Modal de alteração de senha.
+- Cadastro de novo usuário vem com senha padrão "12345".
+- Ao criar usuário, o campo volta para "12345".
+
+3) public/player.html
+- Botão "🔑 Senha" no topo para o jogador alterar a própria senha.
+- Modal de alteração de senha usando POST /api/change-password.
+
+Para não perder dados, substitua apenas estes arquivos:
+- server.js
+- public/master.html
+- public/player.html
+
+Não substitua a pasta data/.
