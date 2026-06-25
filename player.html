@@ -246,13 +246,18 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
-if (!token || !me || me.role === 'master') { window.location.href = '/'; }
-document.getElementById('user-label').textContent = me.displayName;
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
   window.location.href = '/';
 }
+
+if (!token || !me || me.role === 'master') {
+  window.location.href = '/';
+  throw new Error('Não autenticado');
+}
+
+document.getElementById('user-label').textContent = me.displayName;
 
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
