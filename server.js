@@ -85,17 +85,14 @@ app.post('/api/users', authMiddleware, masterOnly, (req, res) => {
     createdAt: new Date().toISOString()
   };
   writeDB('users', users);
+  emitUserStatus();
   res.json({ ok: true, username });
 });
 
 // List users (master only)
 app.get('/api/users', authMiddleware, masterOnly, (req, res) => {
   const users = readDB('users');
-  const list = Object.values(users).map(u => ({
-    username: u.username, displayName: u.displayName,
-    role: u.role, createdAt: u.createdAt
-  }));
-  res.json(list);
+  res.json(usersWithStatus());
 });
 
 // Delete user (master only)
@@ -104,6 +101,13 @@ app.delete('/api/users/:username', authMiddleware, masterOnly, (req, res) => {
   if (!users[req.params.username]) return res.status(404).json({ error: 'Não encontrado' });
   delete users[req.params.username];
   writeDB('users', users);
+  const sheets = readDB('sheets');
+  if (sheets[req.params.username]) {
+    delete sheets[req.params.username];
+    writeDB('sheets', sheets);
+    io.to('session').emit('sheet_removed', { username: req.params.username });
+  }
+  emitUserStatus();
   res.json({ ok: true });
 });
 
@@ -154,7 +158,8 @@ app.post('/api/sheets', authMiddleware, (req, res) => {
     updatedAt: new Date().toISOString()
   };
   writeDB('sheets', sheets);
-  res.json({ ok: true });
+  io.to('session').emit('sheet_updated', { username: req.user.username, sheet: sheets[req.user.username] });
+  res.json({ ok: true, sheet: sheets[req.user.username] });
 });
 
 // Get own sheet
@@ -163,8 +168,8 @@ app.get('/api/sheets/me', authMiddleware, (req, res) => {
   res.json(sheets[req.user.username] || null);
 });
 
-// Get all sheets (master)
-app.get('/api/sheets', authMiddleware, masterOnly, (req, res) => {
+// Get all sheets (party visibility)
+app.get('/api/sheets', authMiddleware, (req, res) => {
   const sheets = readDB('sheets');
   res.json(Object.values(sheets));
 });
@@ -224,6 +229,7 @@ app.get('/api/session', authMiddleware, (req, res) => {
 app.post('/api/session', authMiddleware, masterOnly, (req, res) => {
   const sessions = readDB('sessions');
   sessions.current = {
+    ...(sessions.current || {}),
     ...req.body,
     id: sessions.current?.id || uuidv4(),
     active: true,
@@ -255,12 +261,48 @@ app.get('/api/history', authMiddleware, (req, res) => {
   res.json(msgs.slice(-limit));
 });
 
+// Clear history/log (master)
+app.delete('/api/history', authMiddleware, masterOnly, (req, res) => {
+  writeDB('history', {});
+  io.to('session').emit('log_cleared', { by: req.user.displayName, timestamp: new Date().toISOString() });
+  res.json({ ok: true });
+});
+
 // ══════════════════════════════════════════════════════════════════
 // SOCKET.IO
 // ══════════════════════════════════════════════════════════════════
 
 // Online users map: socketId -> user info
 const onlineUsers = new Map();
+
+function uniqueOnlineUsers() {
+  const byUsername = new Map();
+  for (const u of onlineUsers.values()) {
+    byUsername.set(u.username, u);
+  }
+  return Array.from(byUsername.values());
+}
+
+function usersWithStatus() {
+  const users = readDB('users');
+  const online = new Set(uniqueOnlineUsers().map(u => u.username));
+  return Object.values(users).map(u => ({
+    username: u.username,
+    displayName: u.displayName,
+    role: u.role,
+    createdAt: u.createdAt,
+    online: online.has(u.username)
+  })).sort((a, b) => {
+    if (a.role !== b.role) return a.role === 'master' ? -1 : 1;
+    if (a.online !== b.online) return a.online ? -1 : 1;
+    return (a.displayName || a.username).localeCompare(b.displayName || b.username, 'pt-BR');
+  });
+}
+
+function emitUserStatus() {
+  io.to('session').emit('users_online', uniqueOnlineUsers());
+  io.to('session').emit('users_status', usersWithStatus());
+}
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -277,7 +319,7 @@ io.on('connection', (socket) => {
 
   // Register online
   onlineUsers.set(socket.id, { username: user.username, displayName: user.displayName, role: user.role });
-  io.to('session').emit('users_online', Array.from(onlineUsers.values()));
+  emitUserStatus();
 
   // Send recent history to new connection
   const history = readDB('history');
@@ -294,6 +336,9 @@ io.on('connection', (socket) => {
   const sessions = readDB('sessions');
   if (user.role !== 'master' && sessions.current?.intro) {
     socket.emit('show_intro', { text: sessions.current.intro });
+  }
+  if (sessions.current?.difficulty) {
+    socket.emit('difficulty_set', sessions.current.difficulty);
   }
 
   console.log(`✅ ${user.displayName} (${user.role}) conectou`);
@@ -336,14 +381,55 @@ io.on('connection', (socket) => {
     const isCritical = d1 === 6 && d2 === 6;
     const isFumble = d1 === 1 && d2 === 1;
     const msg = {
-      id: uuidv4(),
-      type: 'roll',
-      author: user.displayName,
-      username: user.username,
+      id: uuidv4(), type: 'roll',
+      author: user.displayName, username: user.username,
       d1, d2, attr, attrName, total, isCritical, isFumble,
       timestamp: new Date().toISOString()
     };
     saveAndBroadcast(msg);
+  });
+
+  // ── CUSTOM ROLL ──
+  socket.on('roll_custom', (data) => {
+    const qty   = Math.min(parseInt(data.qty)||1, 20);
+    const faces = Math.min(parseInt(data.faces)||6, 1000);
+    const bonus = parseInt(data.bonus)||0;
+    const difficulty = parseInt(data.difficulty)||0;
+    const rolls = Array.from({length: qty}, () => Math.floor(Math.random() * faces) + 1);
+    const sum = rolls.reduce((a,b) => a+b, 0);
+    const total = sum + bonus;
+    const isCritical = qty === 2 && faces === 6 && rolls[0] === 6 && rolls[1] === 6;
+    const isFumble   = qty === 2 && faces === 6 && rolls[0] === 1 && rolls[1] === 1;
+    const msg = {
+      id: uuidv4(), type: 'roll_custom',
+      author: user.displayName, username: user.username,
+      qty, faces, bonus, rolls, total, difficulty, isCritical, isFumble,
+      timestamp: new Date().toISOString()
+    };
+    saveAndBroadcast(msg);
+  });
+
+  // ── DIFFICULTY ──
+  socket.on('difficulty_set', (data) => {
+    if (user.role !== 'master') return;
+    const sessions = readDB('sessions');
+    sessions.current = {
+      ...(sessions.current || {}),
+      id: sessions.current?.id || uuidv4(),
+      active: true,
+      startedAt: sessions.current?.startedAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      difficulty: data && data.value ? data : null
+    };
+    writeDB('sessions', sessions);
+    io.to('session').emit('difficulty_set', sessions.current.difficulty);
+  });
+
+  // ── CLEAR LOG ──
+  socket.on('clear_log', () => {
+    if (user.role !== 'master') return;
+    writeDB('history', {});
+    io.to('session').emit('log_cleared', { by: user.displayName, timestamp: new Date().toISOString() });
   });
 
   // ── CHAT ──
@@ -376,7 +462,7 @@ io.on('connection', (socket) => {
   // ── DISCONNECT ──
   socket.on('disconnect', () => {
     onlineUsers.delete(socket.id);
-    io.to('session').emit('users_online', Array.from(onlineUsers.values()));
+    emitUserStatus();
     console.log(`❌ ${user.displayName} desconectou`);
   });
 });
