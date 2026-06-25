@@ -183,7 +183,29 @@ app.patch('/api/sheets/:username', authMiddleware, (req, res) => {
   if (!sheets[req.params.username]) return res.status(404).json({ error: 'Ficha não encontrada' });
   sheets[req.params.username] = { ...sheets[req.params.username], ...req.body, updatedAt: new Date().toISOString() };
   writeDB('sheets', sheets);
-  // Notify all clients in session
+  io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
+  res.json({ ok: true });
+});
+
+// Delete sheet (master only)
+app.delete('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
+  const sheets = readDB('sheets');
+  if (!sheets[req.params.username]) return res.status(404).json({ error: 'Ficha não encontrada' });
+  delete sheets[req.params.username];
+  writeDB('sheets', sheets);
+  io.to('session').emit('sheet_removed', { username: req.params.username });
+  res.json({ ok: true });
+});
+
+// Upload sheet for a specific player (master only)
+app.post('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
+  const sheets = readDB('sheets');
+  sheets[req.params.username] = {
+    ...req.body,
+    username: req.params.username,
+    updatedAt: new Date().toISOString()
+  };
+  writeDB('sheets', sheets);
   io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
   res.json({ ok: true });
 });

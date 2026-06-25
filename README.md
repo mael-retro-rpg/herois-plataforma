@@ -16,12 +16,16 @@ herois-plataforma/
 │   ├── sessions.json
 │   └── history.json
 └── public/
-    ├── index.html     ← Tela de login
-    ├── player.html    ← Tela do jogador
-    ├── master.html    ← Tela do mestre
+    ├── index.html          ← Tela de login
+    ├── player.html         ← Tela do jogador
+    ├── master.html         ← Tela do mestre
+    ├── ficha_herois.html   ← Ficha de personagem interativa
+    ├── fastplay_4c.html    ← Manual fastplay do Sistema 4C
     └── css/
         └── shared.css
 ```
+
+> **Importante:** os arquivos `ficha_herois.html` e `fastplay_4c.html` devem estar dentro da pasta `public/` para ficarem acessíveis pelos links do header da plataforma.
 
 ---
 
