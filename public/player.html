@@ -446,11 +446,16 @@ function buildSheetPopupHTML(s){
       <div>
         <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Ficha de Combate</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
-          ${[['Iniciativa',d.ini],['J. de Ataque',d.jAtq],['Defesa',d.def],['Res. Mágica',d.rmag],['Equip. 1',s.eq1||'—'],['Equip. 2',s.eq2||'—']].map(([l,v])=>`
+          ${[['Iniciativa', d.ini], ['J. de Ataque', d.jAtq], ['Defesa', d.def], ['Res. Mágica', d.rmag], ['Dano Fís.', formatBonus(s.danoFisico)], ['Dano Mag.', formatBonus(s.danoMagico)]].map(([l,v])=>`
           <div style="background:var(--card);border:1px solid var(--border);padding:5px 8px">
             <div style="font-size:.45rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${l}</div>
             <div style="font-family:var(--font-d);font-size:.82rem;color:var(--text);margin-top:1px">${v}</div>
           </div>`).join('')}
+          ${s.eq1 || s.eq2 ? `<div>
+          <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Equipamento</div>
+            ${s.eq1 ? `<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2);margin-bottom:3px">${s.eq1}</div>` : ''}
+            ${s.eq2 ? `<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2)">${s.eq2}</div>` : ''}
+          </div>` : ''}       
         </div>
       </div>
       ${powers.length?`<div>
