@@ -56,6 +56,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .mhud-online { padding: 6px 8px; border-top: 1px solid var(--border); margin-top: 4px; }
 .online-item { font-family: var(--font-m); font-size: .58rem; color: var(--muted); padding: 2px 0; display: flex; align-items: center; gap: 5px; }
 .online-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--hp); }
+.online-item.offline { opacity: .55; }
+.online-item.offline .dot { background: var(--border2); }
+.online-item.master .dot { background: var(--accent); }
 
 /* CENTER */
 #master-center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -406,8 +409,8 @@ if (!token || !me || me.role !== 'master') {
 
 // ── LOG TOOLS — escopo global (chamadas por onclick) ─────────────
 function clearLog() {
-  if (!confirm('Limpar o log visível? O histórico salvo no servidor não é apagado.')) return;
-  document.getElementById('log').innerHTML = '<div class="msg-system">[ Log limpo pelo Mestre ]</div>';
+  if (!confirm('Limpar o log para todos os jogadores?')) return;
+  socket.emit('clear_log');
 }
 
 function saveLog() {
@@ -473,6 +476,7 @@ async function clearIntro() {
 // ── SOCKET ───────────────────────────────────────────────────────
 const socket = io({ auth: { token } });
 let sheets = {};
+let activeDifficulty = null;
 
 socket.on('connect', () => appendSystem('[ Conectado ]'));
 socket.on('disconnect', () => appendSystem('[ Desconectado — tentando reconectar... ]'));
@@ -515,7 +519,15 @@ socket.on('message', msg => {
 
 socket.on('users_online', list => {
   const el = document.getElementById('online-users');
-  el.innerHTML = list.map(u => `<div class="online-item"><div class="dot"></div>${u.displayName}</div>`).join('');
+  el.innerHTML = list.map(u => `<div class="online-item ${u.role==='master'?'master':''}"><div class="dot"></div>${u.displayName}${u.role==='master'?' ✦':''}</div>`).join('');
+});
+
+socket.on('users_status', list => renderUserStatusList(list));
+
+socket.on('difficulty_set', data => applyDifficultyState(data));
+
+socket.on('log_cleared', data => {
+  document.getElementById('log').innerHTML = `<div class="msg-system">[ Log limpo por ${data?.by || 'Mestre'} ]</div>`;
 });
 
 // ── SHARED SHEET BUILDER ─────────────────────────────────────────
@@ -828,7 +840,7 @@ function rollCustomMaster() {
   const qty   = parseInt(document.getElementById('dice-qty').value)   || 1;
   const faces = parseInt(document.getElementById('dice-faces').value) || 6;
   const bonus = parseInt(document.getElementById('dice-bonus').value) || 0;
-  const diffVal = parseInt(document.getElementById('diff-value').value) || 0;
+  const diffVal = activeDifficulty?.value || 0;
   socket.emit('roll_custom', { qty, faces, bonus, difficulty: diffVal });
 }
 
@@ -848,19 +860,28 @@ function setDifficulty() {
   const value = document.getElementById('diff-value').value;
   if (!value) { toast('Escolha uma dificuldade'); return; }
   socket.emit('difficulty_set', { label, value: parseInt(value) });
-  const SCALE = {6:'Fácil',8:'Médio',10:'Difícil',12:'Desafiador',14:'Formidável',16:'Heroico',18:'Lendário',20:'Quase Impossível',22:'Praticamente Impossível'};
-  const ad = document.getElementById('active-diff');
-  ad.textContent = `🎯 ATIVO: ${label} · Dificuldade ${value} (${SCALE[value]||''})`;
-  ad.style.display = 'block';
   toast(`✅ Teste "${label}" definido — dificuldade ${value}`);
 }
 
 function clearDifficulty() {
   socket.emit('difficulty_set', null);
-  document.getElementById('active-diff').style.display = 'none';
-  document.getElementById('diff-label').value = '';
-  document.getElementById('diff-value').value = '';
   toast('Teste removido');
+}
+
+function applyDifficultyState(data) {
+  activeDifficulty = data && data.value ? { label: data.label || 'Teste', value: parseInt(data.value) } : null;
+  const ad = document.getElementById('active-diff');
+  const SCALE = {6:'Fácil',8:'Médio',10:'Difícil',12:'Desafiador',14:'Formidável',16:'Heroico',18:'Lendário',20:'Quase Impossível',22:'Praticamente Impossível'};
+  if (!activeDifficulty) {
+    ad.style.display = 'none';
+    document.getElementById('diff-label').value = '';
+    document.getElementById('diff-value').value = '';
+    return;
+  }
+  document.getElementById('diff-label').value = activeDifficulty.label;
+  document.getElementById('diff-value').value = String(activeDifficulty.value);
+  ad.textContent = `🎯 ATIVO: ${activeDifficulty.label} · Dificuldade ${activeDifficulty.value} (${SCALE[activeDifficulty.value]||''})`;
+  ad.style.display = 'block';
 }
 
 function sendChat() {
@@ -952,6 +973,16 @@ function appendSystem(text) {
 function scrollLog() { const l=document.getElementById('log'); l.scrollTop=l.scrollHeight; }
 
 // ── USERS TAB ─────────────────────────────────────────────────────
+function renderUserStatusList(list) {
+  const el = document.getElementById('online-users');
+  if (!el) return;
+  el.innerHTML = list.map(u => `
+    <div class="online-item ${u.online?'':'offline'} ${u.role==='master'?'master':''}">
+      <div class="dot"></div>${u.displayName}${u.role==='master'?' ✦':''}
+      <span style="margin-left:auto;font-size:.5rem;color:var(--muted)">${u.online?'online':'offline'}</span>
+    </div>`).join('');
+}
+
 async function loadUsers() {
   try {
     const res = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -960,7 +991,7 @@ async function loadUsers() {
     el.innerHTML = users.map(u => `
       <div class="user-row">
         <div class="user-display">${u.displayName}</div>
-        <div class="user-role">${u.username} · ${u.role}</div>
+        <div class="user-role">${u.username} · ${u.role} · ${u.online ? 'online' : 'offline'}</div>
         ${u.role !== 'master' ? `<button class="btn btn-danger sm" onclick="deleteUser('${u.username}')">Remover</button>` : ''}
       </div>`).join('');
   } catch { toast('Erro ao carregar usuários'); }

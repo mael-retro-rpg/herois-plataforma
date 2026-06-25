@@ -64,7 +64,10 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #online-list { padding: 6px 8px; border-top: 1px solid var(--border); margin-top: auto; }
 .online-user { font-family: var(--font-m); font-size: .58rem; color: var(--muted); padding: 2px 0; display: flex; align-items: center; gap: 5px; }
 .online-user .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--hp); flex-shrink: 0; }
+.online-user.offline { opacity: .55; }
+.online-user.offline .dot { background: var(--border2); }
 .online-user.master .dot { background: var(--accent); }
+#sheet-popup.open { display: flex !important; }
 
 /* NARRATIVE CENTER */
 #narrative { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -318,6 +321,7 @@ if (!token || !me || me.role === 'master') {
 const socket = io({ auth: { token } });
 let sheets = {}; // username -> sheet
 let pendingSheet = null;
+let activeDifficulty = null;
 
 socket.on('connect', () => appendSystem('[ Conectado à sessão ]'));
 socket.on('disconnect', () => appendSystem('[ Desconectado — tentando reconectar... ]'));
@@ -361,6 +365,11 @@ socket.on('message', msg => {
 });
 
 socket.on('users_online', list => renderOnline(list));
+socket.on('users_status', list => renderOnline(list));
+
+socket.on('log_cleared', data => {
+  document.getElementById('log').innerHTML = `<div class="msg msg-system">[ Log limpo por ${data?.by || 'Mestre'} ]</div>`;
+});
 
 socket.on('show_intro', ({ text }) => {
   document.getElementById('intro-popup-body').innerHTML = mdToHtml(text);
@@ -369,14 +378,18 @@ socket.on('show_intro', ({ text }) => {
 
 socket.on('difficulty_set', (data) => {
   const banner = document.getElementById('difficulty-banner');
-  if (!data || !data.value) {
+  activeDifficulty = data && data.value ? { label: data.label || 'Teste', value: parseInt(data.value) } : null;
+  if (!activeDifficulty) {
     banner.classList.remove('show');
+    document.getElementById('diff-name').textContent = '—';
+    document.getElementById('diff-val').textContent = '—';
+    document.getElementById('diff-scale').textContent = '—';
     return;
   }
   const SCALE = {6:'Fácil',8:'Médio',10:'Difícil',12:'Desafiador',14:'Formidável',16:'Heroico',18:'Lendário',20:'Quase Impossível',22:'Praticamente Impossível'};
-  document.getElementById('diff-name').textContent = data.label || 'Teste';
-  document.getElementById('diff-val').textContent = data.value;
-  document.getElementById('diff-scale').textContent = SCALE[data.value] || '';
+  document.getElementById('diff-name').textContent = activeDifficulty.label;
+  document.getElementById('diff-val').textContent = activeDifficulty.value;
+  document.getElementById('diff-scale').textContent = SCALE[activeDifficulty.value] || '';
   banner.classList.add('show');
 });
 
@@ -536,8 +549,7 @@ function rollCustom() {
   const qty   = parseInt(document.getElementById('dice-qty').value)   || 1;
   const faces = parseInt(document.getElementById('dice-faces').value) || 6;
   const bonus = parseInt(document.getElementById('dice-bonus').value) || 0;
-  // Get active difficulty if any
-  const diffVal = parseInt(document.getElementById('diff-val').textContent) || 0;
+  const diffVal = activeDifficulty?.value || 0;
   socket.emit('roll_custom', { qty, faces, bonus, difficulty: diffVal });
 }
 
@@ -657,10 +669,14 @@ function renderChat(msg) {
 
 function renderOnline(list) {
   const el = document.getElementById('online-users');
-  el.innerHTML = list.map(u => `
-    <div class="online-user ${u.role==='master'?'master':''}">
+  el.innerHTML = list.map(u => {
+    const online = u.online !== false;
+    return `
+    <div class="online-user ${u.role==='master'?'master':''} ${online?'':'offline'}">
       <div class="dot"></div>${u.displayName}${u.role==='master'?' ✦':''}
-    </div>`).join('');
+      <span style="margin-left:auto;font-size:.5rem;color:var(--muted)">${online?'online':'offline'}</span>
+    </div>`;
+  }).join('');
 }
 
 function appendSystem(text) {
@@ -710,7 +726,11 @@ async function confirmUploadSheet() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(pendingSheet)
     });
-    if (!res.ok) throw new Error();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Erro ao enviar ficha');
+    sheets[me.username] = data.sheet || { ...pendingSheet, username: me.username };
+    renderHUD();
+    buildAttrBtns();
     toast('✅ Ficha enviada!');
     closeModal('sheet-modal');
     pendingSheet = null;
