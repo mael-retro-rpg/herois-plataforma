@@ -166,6 +166,7 @@ td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.7rem;let
   <div class="tab" onclick="showTab('equipamentos')">🗡️ Equipamentos</div>
   <div class="tab" onclick="showTab('ficha')">📄 Ficha Exemplo</div>
   <div class="tab" onclick="showTab('xp')">⭐ Experiência</div>
+  <div class="tab" onclick="showTab('markdown')">✍️ Markdown</div>
 </div>
 
 <div id="content">
@@ -814,6 +815,149 @@ td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.7rem;let
   <div class="box">
     <strong>Atributos acima de 12</strong> indicam capacidades sobrenaturais — além do limite humano. Exigem justificativa narrativa e aprovação do narrador.
   </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MARKDOWN
+══════════════════════════════════════ -->
+<div class="section" id="tab-markdown">
+  <h2>Formatação — Markdown</h2>
+
+  <p>A plataforma suporta <strong>Markdown</strong> nas narrações do Mestre e nas ações dos jogadores. Use para dar mais expressão e clareza ao texto durante a sessão.</p>
+
+  <div class="box blue">
+    <strong>Quem pode usar o quê:</strong> o Mestre tem acesso à formatação completa — títulos, listas, separadores. Jogadores e chat lateral suportam apenas formatação <em>inline</em> (negrito, itálico, código).
+  </div>
+
+  <h3>Formatação Inline — todos</h3>
+  <table>
+    <tr><th>Você digita</th><th>Resultado</th><th>Quando usar</th></tr>
+    <tr>
+      <td><code>**texto**</code></td>
+      <td><strong>texto</strong></td>
+      <td>Nomes de personagens, ataques, itens importantes</td>
+    </tr>
+    <tr>
+      <td><code>*texto*</code></td>
+      <td><em>texto</em></td>
+      <td>Pensamentos, sussurros, ênfase sutil</td>
+    </tr>
+    <tr>
+      <td><code>***texto***</code></td>
+      <td><strong><em>texto</em></strong></td>
+      <td>Momentos épicos, revelações</td>
+    </tr>
+    <tr>
+      <td><code>_texto_</code></td>
+      <td><em>texto</em></td>
+      <td>Alternativa ao itálico com asterisco</td>
+    </tr>
+    <tr>
+      <td><code>__texto__</code></td>
+      <td><strong>texto</strong></td>
+      <td>Alternativa ao negrito com asterisco</td>
+    </tr>
+    <tr>
+      <td><code>`texto`</code></td>
+      <td><code>texto</code></td>
+      <td>Termos de sistema, nomes de poderes, valores</td>
+    </tr>
+  </table>
+
+  <h3>Formatação de Bloco — só o Mestre</h3>
+  <table>
+    <tr><th>Você digita</th><th>Resultado</th><th>Quando usar</th></tr>
+    <tr>
+      <td><code># Título</code></td>
+      <td style="font-family:var(--font-d);color:var(--accent);font-size:.8rem">TÍTULO</td>
+      <td>Início de uma nova cena ou capítulo</td>
+    </tr>
+    <tr>
+      <td><code>## Subtítulo</code></td>
+      <td style="font-family:var(--font-d);color:var(--accent);font-size:.72rem">SUBTÍTULO</td>
+      <td>Localização, nome do local ou momento</td>
+    </tr>
+    <tr>
+      <td><code>### Seção</code></td>
+      <td style="font-family:var(--font-d);color:var(--accent2);font-size:.65rem">SEÇÃO</td>
+      <td>Divisões menores dentro de uma cena</td>
+    </tr>
+    <tr>
+      <td><code>- item</code> ou <code>* item</code></td>
+      <td>• Lista com marcadores</td>
+      <td>Informações, opções, itens encontrados</td>
+    </tr>
+    <tr>
+      <td><code>---</code></td>
+      <td style="border-top:1px solid var(--border2);display:block;width:60px;margin-top:6px"> </td>
+      <td>Separador entre cenas ou passagem de tempo</td>
+    </tr>
+  </table>
+
+  <h3>Exemplos Práticos</h3>
+
+  <div class="card">
+    <div class="card-title">🎭 Narração do Mestre</div>
+    <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px">VOCÊ DIGITA:</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:10px;font-family:var(--font-m);font-size:.75rem;color:var(--text);line-height:1.8;margin-bottom:10px">
+      ## Pátio do Dom Álvaro — 13h47<br><br>
+      O chão treme. Uma **fissura luminosa** rasga o ar no centro do pátio — e de dentro dela emerge uma criatura que vocês *já viram antes*, mas nunca assim.<br><br>
+      Era o chefe do segundo andar de `Castelo das Sombras`. Aqui. De verdade.<br><br>
+      ---<br><br>
+      - A criatura tem **4 metros de altura**<br>
+      - Seus olhos varrem o pátio lentamente<br>
+      - Ela ainda não viu vocês
+    </div>
+    <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px">APARECE COMO:</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:12px;font-size:.82rem;line-height:1.75;color:var(--text)">
+      <div style="font-family:var(--font-d);font-size:.82rem;color:var(--accent);letter-spacing:1px;margin-bottom:8px">Pátio do Dom Álvaro — 13h47</div>
+      O chão treme. Uma <strong>fissura luminosa</strong> rasga o ar no centro do pátio — e de dentro dela emerge uma criatura que vocês <em>já viram antes</em>, mas nunca assim.<br><br>
+      Era o chefe do segundo andar de <code style="font-family:var(--font-m);color:var(--accent2);background:rgba(107,95,255,.1);padding:1px 4px">Castelo das Sombras</code>. Aqui. De verdade.
+      <hr style="border:none;border-top:1px solid var(--border2);margin:10px 0"/>
+      <ul style="padding-left:16px;margin:0">
+        <li>A criatura tem <strong>4 metros de altura</strong></li>
+        <li>Seus olhos varrem o pátio lentamente</li>
+        <li>Ela ainda não viu vocês</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0">
+    <div class="card-title">⚔️ Ação do Jogador</div>
+    <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px">VOCÊ DIGITA:</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:10px;font-family:var(--font-m);font-size:.75rem;color:var(--text);line-height:1.8;margin-bottom:10px">
+      Dou um passo à frente e grito: ***"Não vou deixar vocês passarem!"***<br>
+      Ativo meu *Escudo de Força* e coloco meu personagem na frente do grupo.
+    </div>
+    <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px">APARECE COMO:</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:12px;font-size:.82rem;line-height:1.75;color:var(--accent2);border-left:2px solid var(--accent2)">
+      Dou um passo à frente e grito: <strong><em>"Não vou deixar vocês passarem!"</em></strong><br>
+      Ativo meu <em>Escudo de Força</em> e coloco meu personagem na frente do grupo.
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0">
+    <div class="card-title">💬 Chat Lateral</div>
+    <p style="font-size:.75rem;color:var(--muted);margin-bottom:8px">O chat suporta apenas formatação inline. Títulos e listas não funcionam aqui — só negrito, itálico e código.</p>
+    <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px">VOCÊ DIGITA:</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:10px;font-family:var(--font-m);font-size:.75rem;color:var(--text);line-height:1.8;margin-bottom:10px">
+      Espera, esse monstro é o **Rei das Sombras**? Aquele do `nível 7`?
+    </div>
+    <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px">APARECE COMO:</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:12px;font-size:.75rem;line-height:1.6;color:var(--text)">
+      Espera, esse monstro é o <strong>Rei das Sombras</strong>? Aquele do <code style="font-family:var(--font-m);color:var(--accent2);background:rgba(107,95,255,.1);padding:1px 4px">nível 7</code>?
+    </div>
+  </div>
+
+  <h3>Dicas de Uso</h3>
+  <ul>
+    <li>Use <strong>negrito</strong> com moderação — perde o impacto se tudo estiver em negrito.</li>
+    <li><em>Itálico</em> funciona bem para diálogos internos, sussurros ou pensamentos do personagem.</li>
+    <li><code>Código inline</code> é ótimo para termos do sistema: nomes de poderes, dificuldades, atributos.</li>
+    <li>Títulos <code>#</code> e <code>##</code> são ideais para <strong>demarcar cenas</strong> — o Mestre pode usá-los como cortinas de teatro.</li>
+    <li>O separador <code>---</code> indica passagem de tempo ou mudança de foco sem precisar de uma cena nova.</li>
+    <li>Listas <code>-</code> são perfeitas para descrever um ambiente ou listar opções que os jogadores percebem.</li>
+  </ul>
 </div>
 
 </div><!-- /content -->
