@@ -191,9 +191,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 /* POPUP */
 #sheet-popup { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:500; align-items:center; justify-content:center; }
 #sheet-popup.open { display:flex; }
-/* Modal overlay styles — inline para independência do shared.css */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.78); display:none; align-items:center; justify-content:center; z-index:600; }
-.modal-overlay.open { display:flex; }
 #sheet-popup-box {
   background: var(--panel); border: 1px solid var(--border2);
   width: 520px; max-height: 88vh; overflow-y: auto; position: relative;
@@ -226,7 +223,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   <div class="header-right">
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
-    <a href="/narrador_apoio.html" target="_blank" class="btn btn-muted sm">✦ Narrador</a>
     <span style="font-family:var(--font-m);font-size:.68rem;color:var(--muted)" id="user-label">—</span>
     <button class="btn btn-muted sm" onclick="openChangePasswordModal()">🔑 Senha</button>
     <button class="btn btn-danger sm" onclick="logout()">Sair</button>
@@ -474,10 +470,8 @@ function openImageModal() {
   document.getElementById('img-preview').src = '';
   document.getElementById('img-url-inp').value = '';
   document.getElementById('img-caption').value = '';
+  document.getElementById('img-send-btn').disabled = true;
   document.getElementById('img-file-inp').value = '';
-  const btn = document.getElementById('img-send-btn');
-  btn.setAttribute('disabled','disabled');
-  btn.style.opacity = '.35';
   document.getElementById('image-modal').classList.add('open');
 }
 
@@ -503,9 +497,7 @@ function showImagePreview(src, label) {
   img.src = src;
   document.getElementById('img-preview-label').textContent = label.length > 50 ? label.slice(0,50)+'…' : label;
   document.getElementById('img-preview-wrap').style.display = '';
-  const btn = document.getElementById('img-send-btn');
-  btn.removeAttribute('disabled');
-  btn.style.opacity = '1';
+  document.getElementById('img-send-btn').disabled = false;
 }
 
 function sendImage() {
@@ -843,6 +835,7 @@ function renderPlayersTab() {
     card.innerHTML = `
       <!-- Botões de ação -->
       <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5" onclick="event.stopPropagation()">
+        <button class="btn btn-muted sm" onclick="exportSheet('${s.username}')" title="Exportar ficha como JSON">💾</button>
         <button class="btn btn-muted sm" onclick="openReplaceSheetModal('${s.username}')" title="Substituir ficha">🔄</button>
         <button class="btn btn-danger sm" onclick="removeSheet('${s.username}')" title="Remover ficha">✕</button>
       </div>
@@ -915,6 +908,18 @@ function openAddSheetModal(targetUsername = null) {
   document.getElementById('add-sheet-preview').style.display = 'none';
   document.getElementById('add-sheet-file').value = '';
   document.getElementById('add-sheet-modal').classList.add('open');
+}
+
+function exportSheet(username) {
+  const s = sheets[username];
+  if (!s) { toast('Ficha não encontrada'); return; }
+  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const filename = `ficha_${(s.name || username).replace(/\s+/g,'_')}.json`;
+  a.href = url; a.download = filename;
+  a.click(); URL.revokeObjectURL(url);
+  toast(`💾 Ficha de ${s.name || username} exportada`);
 }
 
 function openReplaceSheetModal(username) {
