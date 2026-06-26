@@ -459,6 +459,23 @@ io.on('connection', (socket) => {
     io.to('session').emit('log_cleared', { by: user.displayName, timestamp: new Date().toISOString() });
   });
 
+  // ── IMAGE (master only) ──
+  socket.on('image', (data) => {
+    if (user.role !== 'master') return;
+    if (!data.src) return;
+    // Limit base64 size (~5MB)
+    if (typeof data.src === 'string' && data.src.startsWith('data:') && data.src.length > 5 * 1024 * 1024) return;
+    const msg = {
+      id: uuidv4(), type: 'image',
+      author: getAuthorLabel(user.username, user.displayName),
+      username: user.username,
+      src: data.src,
+      caption: (data.caption || '').slice(0, 200),
+      timestamp: new Date().toISOString()
+    };
+    saveAndBroadcast(msg);
+  });
+
   // ── CHAT ──
   socket.on('chat', (data) => {
     const msg = {
