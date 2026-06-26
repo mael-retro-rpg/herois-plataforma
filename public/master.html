@@ -191,6 +191,13 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 /* POPUP */
 #sheet-popup { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:500; align-items:center; justify-content:center; }
 #sheet-popup.open { display:flex; }
+/* Modal overlay — inline para garantir independência do shared.css */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; z-index:500; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:var(--panel); border:1px solid var(--border2); padding:24px; width:400px; max-width:94vw; max-height:85vh; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+.modal-title { font-family:var(--font-d); font-size:.8rem; letter-spacing:2px; color:var(--accent); }
+.modal-close { float:right; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; }
+.modal-close:hover { color:var(--accent3); }
 #sheet-popup-box {
   background: var(--panel); border: 1px solid var(--border2);
   width: 520px; max-height: 88vh; overflow-y: auto; position: relative;
@@ -470,8 +477,10 @@ function openImageModal() {
   document.getElementById('img-preview').src = '';
   document.getElementById('img-url-inp').value = '';
   document.getElementById('img-caption').value = '';
-  document.getElementById('img-send-btn').disabled = true;
   document.getElementById('img-file-inp').value = '';
+  const btn = document.getElementById('img-send-btn');
+  btn.setAttribute('disabled', 'disabled');
+  btn.style.opacity = '.35';
   document.getElementById('image-modal').classList.add('open');
 }
 
@@ -479,7 +488,7 @@ function handleImageFile(e) {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    pendingImageData = ev.target.result; // base64
+    pendingImageData = ev.target.result;
     showImagePreview(pendingImageData, file.name);
   };
   reader.readAsDataURL(file);
@@ -497,7 +506,9 @@ function showImagePreview(src, label) {
   img.src = src;
   document.getElementById('img-preview-label').textContent = label.length > 50 ? label.slice(0,50)+'…' : label;
   document.getElementById('img-preview-wrap').style.display = '';
-  document.getElementById('img-send-btn').disabled = false;
+  const btn = document.getElementById('img-send-btn');
+  btn.removeAttribute('disabled');
+  btn.style.opacity = '1';
 }
 
 function sendImage() {
