@@ -6,11 +6,32 @@
     "role": "master",
     "createdAt": "2026-06-24T21:01:43.947Z"
   },
-  "mael_jogador": {
-    "username": "mael_jogador",
-    "password": "$2a$10$BLQoPIa4lagKM5XB2Y0NQuHM9MQAaP0/x8GUoelp2oyFlNdytJ9ii",
-    "displayName": "Mael",
+  "melamorim": {
+    "username": "melamorim",
+    "password": "$2a$10$ejqF7tqZ0vB7d2dO27mkEO5tS5IgdkS8F8/Ra.dvhiIv0Wf9vkrRa",
+    "displayName": "Mel",
     "role": "player",
-    "createdAt": "2026-06-24T21:04:27.544Z"
+    "createdAt": "2026-06-25T20:20:36.596Z"
+  },
+  "lipebcg": {
+    "username": "lipebcg",
+    "password": "$2a$10$Ig3qUoMKUDj0.G4x8.hjM.gr5FasaR7dElxmGjrGZOov5ROH/qa.a",
+    "displayName": "Filipe",
+    "role": "player",
+    "createdAt": "2026-06-25T20:20:59.677Z"
+  },
+  "demon_isa": {
+    "username": "demon_isa",
+    "password": "$2a$10$xSQwY.TKsJquCtIICc.26O/w0quq7ldsbrULbpdikQNkyAz2cKtaO",
+    "displayName": "Isa",
+    "role": "player",
+    "createdAt": "2026-06-25T20:22:46.401Z"
+  },
+  "lisa": {
+    "username": "lisa",
+    "password": "$2a$10$gBRzsiIOsyYl6WQeONjdbuF0Ho.K7Ky5Ixs7xU4sCNZXbS5HGQ61e",
+    "displayName": "Lisa",
+    "role": "player",
+    "createdAt": "2026-06-25T21:31:02.629Z"
   }
 }
