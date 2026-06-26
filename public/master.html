@@ -94,6 +94,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .msg-roll.critical .roll-tag { color: var(--accent); border-color: var(--accent); }
 .msg-roll.fumble   .roll-tag { color: var(--accent3); border-color: var(--accent3); }
 .msg-system { font-family: var(--font-m); font-size: .68rem; color: var(--muted); border-left: 2px solid var(--border2); padding-left: 8px; }
+.msg-image { border-left: 2px solid var(--accent2); padding-left: 10px; }
+.img-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--accent2); margin-bottom: 2px; }
+.img-caption { font-size: .72rem; color: var(--muted); margin-top: 4px; font-style: italic; }
 
 /* NARRATE INPUT */
 #narrate-area {
@@ -250,6 +253,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     <div id="master-center">
       <div id="session-toolbar">
         <button class="stb-btn" onclick="openIntroModal()" title="Narração de abertura que aparece para jogadores ao entrar">🎬 Abertura</button>
+        <button class="stb-btn" onclick="openImageModal()" title="Inserir imagem no log para todos os jogadores">🖼 Imagem</button>
         <button class="stb-btn" onclick="saveLog()" title="Salvar log da sessão como arquivo de texto">💾 Salvar Log</button>
         <button class="stb-btn danger" onclick="clearLog()" title="Limpar mensagens do log (não apaga o histórico salvo)">🗑 Limpar</button>
       </div>
@@ -367,6 +371,36 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   </div>
 </div>
 
+<!-- IMAGE MODAL (mestre insere imagem no log) -->
+<div class="modal-overlay" id="image-modal">
+  <div class="modal-box" style="width:460px;max-width:95vw">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🖼 Inserir Imagem</div>
+      <button class="modal-close" onclick="document.getElementById('image-modal').classList.remove('open')">✕</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
+      A imagem será exibida no log de <strong style="color:var(--accent)">todos os jogadores</strong> em tempo real.
+    </p>
+    <!-- Upload file -->
+    <button class="btn btn-accent full" onclick="document.getElementById('img-file-inp').click()">📂 Carregar do computador</button>
+    <input type="file" id="img-file-inp" accept="image/*" style="display:none" onchange="handleImageFile(event)"/>
+    <!-- URL -->
+    <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+      <input class="inp" id="img-url-inp" type="text" placeholder="Ou cole uma URL de imagem..." style="flex:1;font-size:.75rem"/>
+      <button class="btn btn-accent2" onclick="handleImageUrl()" style="flex-shrink:0">Usar URL</button>
+    </div>
+    <!-- Preview -->
+    <div id="img-preview-wrap" style="display:none;text-align:center;margin-top:4px">
+      <img id="img-preview" src="" alt="prévia" style="max-width:100%;max-height:200px;border:1px solid var(--border2);object-fit:contain"/>
+      <div style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);margin-top:4px" id="img-preview-label"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <input class="inp" id="img-caption" type="text" placeholder="Legenda (opcional)" style="flex:1;font-size:.75rem"/>
+      <button class="btn btn-accent" onclick="sendImage()" id="img-send-btn" disabled style="flex-shrink:0">▶ Enviar</button>
+    </div>
+  </div>
+</div>
+
 <!-- INTRO ADVENTURE MODAL (mestre define) -->
 <div class="modal-overlay" id="intro-modal">
   <div class="modal-box" style="width:500px;max-width:95vw">
@@ -425,6 +459,53 @@ if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
+}
+
+// ── IMAGE TOOLS ───────────────────────────────────────────────────
+let pendingImageData = null;
+
+function openImageModal() {
+  pendingImageData = null;
+  document.getElementById('img-preview-wrap').style.display = 'none';
+  document.getElementById('img-preview').src = '';
+  document.getElementById('img-url-inp').value = '';
+  document.getElementById('img-caption').value = '';
+  document.getElementById('img-send-btn').disabled = true;
+  document.getElementById('img-file-inp').value = '';
+  document.getElementById('image-modal').classList.add('open');
+}
+
+function handleImageFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pendingImageData = ev.target.result; // base64
+    showImagePreview(pendingImageData, file.name);
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleImageUrl() {
+  const url = document.getElementById('img-url-inp').value.trim();
+  if (!url) return;
+  pendingImageData = url;
+  showImagePreview(url, url);
+}
+
+function showImagePreview(src, label) {
+  const img = document.getElementById('img-preview');
+  img.src = src;
+  document.getElementById('img-preview-label').textContent = label.length > 50 ? label.slice(0,50)+'…' : label;
+  document.getElementById('img-preview-wrap').style.display = '';
+  document.getElementById('img-send-btn').disabled = false;
+}
+
+function sendImage() {
+  if (!pendingImageData) return;
+  const caption = document.getElementById('img-caption').value.trim();
+  socket.emit('image', { src: pendingImageData, caption });
+  document.getElementById('image-modal').classList.remove('open');
+  pendingImageData = null;
 }
 
 // ── LOG TOOLS — escopo global (chamadas por onclick) ─────────────
@@ -1008,6 +1089,12 @@ function renderMessage(msg) {
     el.innerHTML = `<div class="roll-author">${msg.author} rolou ${diceLabel}</div>${body}${tag}${diffResult}`;
   } else if (msg.type === 'system') {
     el.className = 'msg-system'; el.textContent = msg.content;
+  } else if (msg.type === 'image') {
+    el.className = 'msg-image';
+    el.innerHTML = `
+      <div class="img-author">🖼 ${msg.author}</div>
+      <img src="${msg.src}" alt="${msg.caption||'imagem'}" style="max-width:100%;max-height:400px;object-fit:contain;border:1px solid var(--border2);display:block;margin-top:6px"/>
+      ${msg.caption ? `<div class="img-caption">${msg.caption}</div>` : ''}`;
   }
   if (el.innerHTML || el.textContent) { log.appendChild(el); scrollLog(); }
 }

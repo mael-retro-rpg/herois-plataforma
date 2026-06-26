@@ -92,6 +92,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .msg-roll.critical .roll-tag { color: var(--accent); border-color: var(--accent); }
 .msg-roll.fumble .roll-tag { color: var(--accent3); border-color: var(--accent3); }
 .msg-system { font-family: var(--font-m); font-size: .68rem; color: var(--muted); border-left: 2px solid var(--border2); padding-left: 8px; }
+.msg-image { border-left: 2px solid var(--accent2); padding-left: 10px; }
+.img-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--accent2); margin-bottom: 2px; }
+.img-caption { font-size: .72rem; color: var(--muted); margin-top: 4px; font-style: italic; }
 
 /* INPUT AREA */
 #input-area {
@@ -702,6 +705,12 @@ function renderMessage(msg) {
   } else if (msg.type === 'system') {
     el.className = 'msg msg-system';
     el.textContent = msg.content;
+  } else if (msg.type === 'image') {
+    el.className = 'msg msg-image';
+    el.innerHTML = `
+      <div class="img-author">🖼 ${msg.author}</div>
+      <img src="${msg.src}" alt="${msg.caption||'imagem'}" style="max-width:100%;max-height:400px;object-fit:contain;border:1px solid var(--border2);display:block;margin-top:6px"/>
+      ${msg.caption ? `<div class="img-caption">${msg.caption}</div>` : ''}`;
   }
 
   if (el.innerHTML || el.textContent) {
