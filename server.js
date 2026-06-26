@@ -216,12 +216,7 @@ app.post('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
   writeDB('sheets', sheets);
   io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
   // Refresh display names for all online users
-  const users = readDB('users');
-  const updated = Array.from(onlineUsers.entries()).map(([sid, u]) => ({
-    ...u,
-    displayName: getAuthorLabel(u.username, users[u.username]?.displayName || u.username)
-  }));
-  io.to('session').emit('users_online', updated);
+  emitUsersStatus();
   res.json({ ok: true });
 });
 
@@ -293,7 +288,7 @@ io.on('connection', (socket) => {
   // Register online — use character name if sheet exists
   const authorLabel = getAuthorLabel(user.username, user.displayName);
   onlineUsers.set(socket.id, { username: user.username, displayName: authorLabel, role: user.role });
-  io.to('session').emit('users_online', Array.from(onlineUsers.values()));
+  emitUsersStatus();
 
   // Send recent history to new connection
   const history = readDB('history');
@@ -408,18 +403,29 @@ io.on('connection', (socket) => {
     sheets[target] = { ...sheets[target], ...data.stats, updatedAt: new Date().toISOString() };
     writeDB('sheets', sheets);
     io.to('session').emit('sheet_updated', { username: target, sheet: sheets[target] });
-    // Refresh online users list so display names update immediately
-    const updated = Array.from(onlineUsers.entries()).map(([sid, u]) => ({
-      ...u,
-      displayName: getAuthorLabel(u.username, u.displayName.split(' (')[0])
-    }));
-    io.to('session').emit('users_online', updated);
+    emitUsersStatus();
+  });
+
+  // ── IMAGE (master only) ──
+  socket.on('image', (data) => {
+    if (user.role !== 'master') return;
+    if (!data.src) return;
+    if (typeof data.src === 'string' && data.src.startsWith('data:') && data.src.length > 5 * 1024 * 1024) return;
+    const msg = {
+      id: uuidv4(), type: 'image',
+      author: getAuthorLabel(user.username, user.displayName),
+      username: user.username,
+      src: data.src,
+      caption: (data.caption || '').slice(0, 200),
+      timestamp: new Date().toISOString()
+    };
+    saveAndBroadcast(msg);
   });
 
   // ── DISCONNECT ──
   socket.on('disconnect', () => {
     onlineUsers.delete(socket.id);
-    io.to('session').emit('users_online', Array.from(onlineUsers.values()));
+    emitUsersStatus();
     console.log(`❌ ${getAuthorLabel(user.username, user.displayName)} desconectou`);
   });
 });
@@ -429,6 +435,25 @@ function saveAndBroadcast(msg) {
   history[msg.id] = msg;
   writeDB('history', history);
   io.to('session').emit('message', msg);
+}
+
+// Emits both users_online (connected only) and users_status (all users with online flag)
+function emitUsersStatus() {
+  const onlineList = Array.from(onlineUsers.values());
+  io.to('session').emit('users_online', onlineList);
+
+  // users_status: all registered users with online flag
+  const users = readDB('users');
+  const onlineUsernames = new Set(onlineList.map(u => u.username));
+  const statusList = Object.values(users)
+    .filter(u => u.role !== 'master')
+    .map(u => ({
+      username: u.username,
+      displayName: getAuthorLabel(u.username, u.displayName),
+      role: u.role,
+      online: onlineUsernames.has(u.username)
+    }));
+  io.to('session').emit('users_status', statusList);
 }
 
 // ── Start ────────────────────────────────────────────────────────
