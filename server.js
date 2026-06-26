@@ -37,6 +37,14 @@ function writeDB(name, data) {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Auth label helper (must be before routes and socket) ─────────
+function getAuthorLabel(username, displayName) {
+  const sheets = readDB('sheets');
+  const sheet = sheets[username];
+  if (sheet && sheet.name) return `${sheet.name} (${displayName})`;
+  return displayName;
+}
+
 // ── Auth middleware ──────────────────────────────────────────────
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -73,9 +81,8 @@ app.post('/api/login', (req, res) => {
 
 // Register player (master only via POST /api/users)
 app.post('/api/users', authMiddleware, masterOnly, (req, res) => {
-  const { username, displayName, role } = req.body;
-  const password = req.body.password || '12345';
-  if (!username) return res.status(400).json({ error: 'Username obrigatório' });
+  const { username, password, displayName, role } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username e senha obrigatórios' });
   const users = readDB('users');
   if (users[username]) return res.status(409).json({ error: 'Usuário já existe' });
   users[username] = {
@@ -86,14 +93,17 @@ app.post('/api/users', authMiddleware, masterOnly, (req, res) => {
     createdAt: new Date().toISOString()
   };
   writeDB('users', users);
-  emitUserStatus();
   res.json({ ok: true, username });
 });
 
 // List users (master only)
 app.get('/api/users', authMiddleware, masterOnly, (req, res) => {
   const users = readDB('users');
-  res.json(usersWithStatus());
+  const list = Object.values(users).map(u => ({
+    username: u.username, displayName: u.displayName,
+    role: u.role, createdAt: u.createdAt
+  }));
+  res.json(list);
 });
 
 // Delete user (master only)
@@ -102,13 +112,6 @@ app.delete('/api/users/:username', authMiddleware, masterOnly, (req, res) => {
   if (!users[req.params.username]) return res.status(404).json({ error: 'Não encontrado' });
   delete users[req.params.username];
   writeDB('users', users);
-  const sheets = readDB('sheets');
-  if (sheets[req.params.username]) {
-    delete sheets[req.params.username];
-    writeDB('sheets', sheets);
-    io.to('session').emit('sheet_removed', { username: req.params.username });
-  }
-  emitUserStatus();
   res.json({ ok: true });
 });
 
@@ -150,43 +153,16 @@ app.get('/api/setup', (req, res) => {
 // SHEET ROUTES
 // ══════════════════════════════════════════════════════════════════
 
-function firstPayloadValue(obj, keys) {
-  for (const key of keys) {
-    const value = obj?.[key];
-    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
-  }
-  return undefined;
-}
-
-function normalizeSheetPayload(payload) {
-  const sheet = { ...(payload || {}) };
-  const danoFisico = firstPayloadValue(sheet, [
-    'danoFisico','danoFis','danoFisicoBonus','danoFisBonus','bonusDanoFisico','bonusDanoFis',
-    'dano_fisico','dano_fis','bonus_dano_fisico','bonus_dano_fis','bdFisico','bdFis',
-    'dmgFis','dmgPhys','physicalDamage','damagePhysical','physDamage','danoFísico','bonusDanoFísico'
-  ]);
-  const danoMagico = firstPayloadValue(sheet, [
-    'danoMagico','danoMag','danoMagicoBonus','danoMagBonus','bonusDanoMagico','bonusDanoMag',
-    'dano_magico','dano_mag','bonus_dano_magico','bonus_dano_mag','bdMagico','bdMag',
-    'dmgMag','dmgMagic','magicDamage','damageMagic','magDamage','danoMágico','bonusDanoMágico'
-  ]);
-  if (danoFisico !== undefined) sheet.danoFisico = danoFisico;
-  if (danoMagico !== undefined) sheet.danoMagico = danoMagico;
-  return sheet;
-}
-
-
 // Save sheet
 app.post('/api/sheets', authMiddleware, (req, res) => {
   const sheets = readDB('sheets');
   sheets[req.user.username] = {
-    ...normalizeSheetPayload(req.body),
+    ...req.body,
     username: req.user.username,
     updatedAt: new Date().toISOString()
   };
   writeDB('sheets', sheets);
-  io.to('session').emit('sheet_updated', { username: req.user.username, sheet: sheets[req.user.username] });
-  res.json({ ok: true, sheet: sheets[req.user.username] });
+  res.json({ ok: true });
 });
 
 // Get own sheet
@@ -195,8 +171,8 @@ app.get('/api/sheets/me', authMiddleware, (req, res) => {
   res.json(sheets[req.user.username] || null);
 });
 
-// Get all sheets (party visibility)
-app.get('/api/sheets', authMiddleware, (req, res) => {
+// Get all sheets (master)
+app.get('/api/sheets', authMiddleware, masterOnly, (req, res) => {
   const sheets = readDB('sheets');
   res.json(Object.values(sheets));
 });
@@ -213,7 +189,7 @@ app.patch('/api/sheets/:username', authMiddleware, (req, res) => {
     return res.status(403).json({ error: 'Sem permissão' });
   const sheets = readDB('sheets');
   if (!sheets[req.params.username]) return res.status(404).json({ error: 'Ficha não encontrada' });
-  sheets[req.params.username] = { ...sheets[req.params.username], ...normalizeSheetPayload(req.body), updatedAt: new Date().toISOString() };
+  sheets[req.params.username] = { ...sheets[req.params.username], ...req.body, updatedAt: new Date().toISOString() };
   writeDB('sheets', sheets);
   io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
   res.json({ ok: true });
@@ -233,12 +209,19 @@ app.delete('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
 app.post('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
   const sheets = readDB('sheets');
   sheets[req.params.username] = {
-    ...normalizeSheetPayload(req.body),
+    ...req.body,
     username: req.params.username,
     updatedAt: new Date().toISOString()
   };
   writeDB('sheets', sheets);
   io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
+  // Refresh display names for all online users
+  const users = readDB('users');
+  const updated = Array.from(onlineUsers.entries()).map(([sid, u]) => ({
+    ...u,
+    displayName: getAuthorLabel(u.username, users[u.username]?.displayName || u.username)
+  }));
+  io.to('session').emit('users_online', updated);
   res.json({ ok: true });
 });
 
@@ -256,7 +239,6 @@ app.get('/api/session', authMiddleware, (req, res) => {
 app.post('/api/session', authMiddleware, masterOnly, (req, res) => {
   const sessions = readDB('sessions');
   sessions.current = {
-    ...(sessions.current || {}),
     ...req.body,
     id: sessions.current?.id || uuidv4(),
     active: true,
@@ -288,48 +270,12 @@ app.get('/api/history', authMiddleware, (req, res) => {
   res.json(msgs.slice(-limit));
 });
 
-// Clear history/log (master)
-app.delete('/api/history', authMiddleware, masterOnly, (req, res) => {
-  writeDB('history', {});
-  io.to('session').emit('log_cleared', { by: req.user.displayName, timestamp: new Date().toISOString() });
-  res.json({ ok: true });
-});
-
 // ══════════════════════════════════════════════════════════════════
 // SOCKET.IO
 // ══════════════════════════════════════════════════════════════════
 
 // Online users map: socketId -> user info
 const onlineUsers = new Map();
-
-function uniqueOnlineUsers() {
-  const byUsername = new Map();
-  for (const u of onlineUsers.values()) {
-    byUsername.set(u.username, u);
-  }
-  return Array.from(byUsername.values());
-}
-
-function usersWithStatus() {
-  const users = readDB('users');
-  const online = new Set(uniqueOnlineUsers().map(u => u.username));
-  return Object.values(users).map(u => ({
-    username: u.username,
-    displayName: u.displayName,
-    role: u.role,
-    createdAt: u.createdAt,
-    online: online.has(u.username)
-  })).sort((a, b) => {
-    if (a.role !== b.role) return a.role === 'master' ? -1 : 1;
-    if (a.online !== b.online) return a.online ? -1 : 1;
-    return (a.displayName || a.username).localeCompare(b.displayName || b.username, 'pt-BR');
-  });
-}
-
-function emitUserStatus() {
-  io.to('session').emit('users_online', uniqueOnlineUsers());
-  io.to('session').emit('users_status', usersWithStatus());
-}
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -344,9 +290,10 @@ io.on('connection', (socket) => {
   const user = socket.user;
   socket.join('session');
 
-  // Register online
-  onlineUsers.set(socket.id, { username: user.username, displayName: user.displayName, role: user.role });
-  emitUserStatus();
+  // Register online — use character name if sheet exists
+  const authorLabel = getAuthorLabel(user.username, user.displayName);
+  onlineUsers.set(socket.id, { username: user.username, displayName: authorLabel, role: user.role });
+  io.to('session').emit('users_online', Array.from(onlineUsers.values()));
 
   // Send recent history to new connection
   const history = readDB('history');
@@ -364,19 +311,15 @@ io.on('connection', (socket) => {
   if (user.role !== 'master' && sessions.current?.intro) {
     socket.emit('show_intro', { text: sessions.current.intro });
   }
-  if (sessions.current?.difficulty) {
-    socket.emit('difficulty_set', sessions.current.difficulty);
-  }
 
-  console.log(`✅ ${user.displayName} (${user.role}) conectou`);
+  console.log(`✅ ${authorLabel} (${user.role}) conectou`);
 
   // ── NARRATIVE MESSAGE (master only) ──
   socket.on('narrate', (data) => {
     if (user.role !== 'master') return;
     const msg = {
-      id: uuidv4(),
-      type: 'narrate',
-      author: user.displayName,
+      id: uuidv4(), type: 'narrate',
+      author: getAuthorLabel(user.username, user.displayName),
       username: user.username,
       content: data.content,
       timestamp: new Date().toISOString()
@@ -387,9 +330,8 @@ io.on('connection', (socket) => {
   // ── PLAYER ACTION ──
   socket.on('action', (data) => {
     const msg = {
-      id: uuidv4(),
-      type: 'action',
-      author: user.displayName,
+      id: uuidv4(), type: 'action',
+      author: getAuthorLabel(user.username, user.displayName),
       username: user.username,
       role: user.role,
       content: data.content,
@@ -409,7 +351,8 @@ io.on('connection', (socket) => {
     const isFumble = d1 === 1 && d2 === 1;
     const msg = {
       id: uuidv4(), type: 'roll',
-      author: user.displayName, username: user.username,
+      author: getAuthorLabel(user.username, user.displayName),
+      username: user.username,
       d1, d2, attr, attrName, total, isCritical, isFumble,
       timestamp: new Date().toISOString()
     };
@@ -429,7 +372,8 @@ io.on('connection', (socket) => {
     const isFumble   = qty === 2 && faces === 6 && rolls[0] === 1 && rolls[1] === 1;
     const msg = {
       id: uuidv4(), type: 'roll_custom',
-      author: user.displayName, username: user.username,
+      author: getAuthorLabel(user.username, user.displayName),
+      username: user.username,
       qty, faces, bonus, rolls, total, difficulty, isCritical, isFumble,
       timestamp: new Date().toISOString()
     };
@@ -439,51 +383,15 @@ io.on('connection', (socket) => {
   // ── DIFFICULTY ──
   socket.on('difficulty_set', (data) => {
     if (user.role !== 'master') return;
-    const sessions = readDB('sessions');
-    sessions.current = {
-      ...(sessions.current || {}),
-      id: sessions.current?.id || uuidv4(),
-      active: true,
-      startedAt: sessions.current?.startedAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      difficulty: data && data.value ? data : null
-    };
-    writeDB('sessions', sessions);
-    io.to('session').emit('difficulty_set', sessions.current.difficulty);
-  });
-
-  // ── CLEAR LOG ──
-  socket.on('clear_log', () => {
-    if (user.role !== 'master') return;
-    writeDB('history', {});
-    io.to('session').emit('log_cleared', { by: user.displayName, timestamp: new Date().toISOString() });
-  });
-
-  // ── IMAGE (master only) ──
-  socket.on('image', (data) => {
-    if (user.role !== 'master') return;
-    if (!data.src) return;
-    // Limit base64 size (~5MB)
-    if (typeof data.src === 'string' && data.src.startsWith('data:') && data.src.length > 5 * 1024 * 1024) return;
-    const msg = {
-      id: uuidv4(), type: 'image',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      src: data.src,
-      caption: (data.caption || '').slice(0, 200),
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
+    io.to('session').emit('difficulty_set', data);
   });
 
   // ── CHAT ──
   socket.on('chat', (data) => {
     const msg = {
-      id: uuidv4(),
-      type: 'chat',
-      author: user.displayName,
-      username: user.username,
-      role: user.role,
+      id: uuidv4(), type: 'chat',
+      author: getAuthorLabel(user.username, user.displayName),
+      username: user.username, role: user.role,
       content: data.content,
       timestamp: new Date().toISOString()
     };
@@ -493,7 +401,6 @@ io.on('connection', (socket) => {
 
   // ── UPDATE SHEET STATS (VIT/VON in real time) ──
   socket.on('update_stats', (data) => {
-    // Players can update own; master can update anyone
     const target = data.username;
     if (user.role !== 'master' && user.username !== target) return;
     const sheets = readDB('sheets');
@@ -501,13 +408,19 @@ io.on('connection', (socket) => {
     sheets[target] = { ...sheets[target], ...data.stats, updatedAt: new Date().toISOString() };
     writeDB('sheets', sheets);
     io.to('session').emit('sheet_updated', { username: target, sheet: sheets[target] });
+    // Refresh online users list so display names update immediately
+    const updated = Array.from(onlineUsers.entries()).map(([sid, u]) => ({
+      ...u,
+      displayName: getAuthorLabel(u.username, u.displayName.split(' (')[0])
+    }));
+    io.to('session').emit('users_online', updated);
   });
 
   // ── DISCONNECT ──
   socket.on('disconnect', () => {
     onlineUsers.delete(socket.id);
-    emitUserStatus();
-    console.log(`❌ ${user.displayName} desconectou`);
+    io.to('session').emit('users_online', Array.from(onlineUsers.values()));
+    console.log(`❌ ${getAuthorLabel(user.username, user.displayName)} desconectou`);
   });
 });
 
