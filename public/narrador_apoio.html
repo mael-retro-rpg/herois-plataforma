@@ -137,8 +137,76 @@ function load(){try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state={..
 function uuid(){return (crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2))}
 function showPage(name,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));$('page-'+name).classList.add('active');btn.classList.add('active')}
 function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
-function mdToHtml(md){const lines=esc(md).split('\n');let out='',inList=false;for(const line of lines){if(/^###\s+/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<h3>${inlineMd(line.replace(/^###\s+/,''))}</h3>`}else if(/^##\s+/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<h2>${inlineMd(line.replace(/^##\s+/,''))}</h2>`}else if(/^#\s+/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<h1>${inlineMd(line.replace(/^#\s+/,''))}</h1>`}else if(/^[-*]\s+/.test(line)){if(!inList){out+='<ul>';inList=true}out+=`<li>${inlineMd(line.replace(/^[-*]\s+/,''))}</li>`}else if(/^&gt;\s?/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<blockquote>${inlineMd(line.replace(/^&gt;\s?/,''))}</blockquote>`}else if(line.trim()===''){if(inList){out+='</ul>';inList=false}out+='<br>'}else{if(inList){out+='</ul>';inList=false}out+=`<p>${inlineMd(line)}</p>`}}if(inList)out+='</ul>';return out}
-function inlineMd(s){return String(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>')}
+function mdToHtml(md){
+  const lines = esc(md).split('\n');
+  let out = '', inList = false, inTable = false, tableRows = [];
+
+  function flushList(){ if(inList){out+='</ul>';inList=false;} }
+  function flushTable(){
+    if(!inTable) return;
+    // First row = header, second = separator, rest = body
+    if(tableRows.length>=2){
+      const header = tableRows[0].split('|').filter((_,i,a)=>i>0&&i<a.length-1);
+      const body   = tableRows.slice(2);
+      out += '<table><thead><tr>' + header.map(h=>`<th>${inlineMd(h.trim())}</th>`).join('') + '</tr></thead><tbody>';
+      body.forEach(row=>{
+        const cells = row.split('|').filter((_,i,a)=>i>0&&i<a.length-1);
+        out += '<tr>' + cells.map(c=>`<td>${inlineMd(c.trim())}</td>`).join('') + '</tr>';
+      });
+      out += '</tbody></table>';
+    }
+    inTable=false; tableRows=[];
+  }
+
+  for(const line of lines){
+    // Table row detection
+    if(/^\|.+\|/.test(line)){
+      flushList();
+      if(!inTable) inTable=true;
+      tableRows.push(line);
+      continue;
+    } else if(inTable){
+      flushTable();
+    }
+
+    if(/^-{3,}$/.test(line.trim())||/^\*{3,}$/.test(line.trim())){
+      flushList();
+      out+='<hr>';
+    } else if(/^###\s+/.test(line)){
+      flushList();
+      out+=`<h3>${inlineMd(line.replace(/^###\s+/,''))}</h3>`;
+    } else if(/^##\s+/.test(line)){
+      flushList();
+      out+=`<h2>${inlineMd(line.replace(/^##\s+/,''))}</h2>`;
+    } else if(/^#\s+/.test(line)){
+      flushList();
+      out+=`<h1>${inlineMd(line.replace(/^#\s+/,''))}</h1>`;
+    } else if(/^[-*]\s+/.test(line)){
+      if(!inList){out+='<ul>';inList=true;}
+      out+=`<li>${inlineMd(line.replace(/^[-*]\s+/,''))}</li>`;
+    } else if(/^&gt;\s?/.test(line)){
+      flushList();
+      out+=`<blockquote>${inlineMd(line.replace(/^&gt;\s?/,''))}</blockquote>`;
+    } else if(line.trim()===''){
+      flushList();
+      out+='<br>';
+    } else {
+      flushList();
+      out+=`<p>${inlineMd(line)}</p>`;
+    }
+  }
+  flushList(); flushTable();
+  return out;
+}
+function inlineMd(s){
+  return String(s)
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*\*([^*]+)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
+    .replace(/__([^_]+)__/g,'<strong>$1</strong>')
+    .replace(/_([^_]+)_/g,'<em>$1</em>');
+}
 function currentSummary(){return state.summaries.find(x=>x.id===state.currentSummary)||state.summaries[0]}
 function renderSummaries(){const cur=currentSummary();$('summary-list').innerHTML=state.summaries.map(s=>`<div class="summary-item ${cur&&s.id===cur.id?'active':''}" onclick="selectSummary('${s.id}')"><div class="summary-name">${esc(s.title||'Sem título')}</div><div class="summary-meta">${(s.md||'').length} caracteres</div></div>`).join('');$('summary-title').value=cur?.title||'';$('summary-md').value=cur?.md||'';$('summary-preview').innerHTML=mdToHtml(cur?.md||'')}
 function selectSummary(id){state.currentSummary=id;save();renderSummaries()}function newSummary(){const s={id:uuid(),title:'Novo resumo',md:'# Novo resumo\n\n- '};state.summaries.unshift(s);state.currentSummary=s.id;save();renderSummaries()}function duplicateSummary(){const cur=currentSummary();if(!cur)return;const s={id:uuid(),title:(cur.title||'Resumo')+' — cópia',md:cur.md||''};state.summaries.unshift(s);state.currentSummary=s.id;save();renderSummaries()}function deleteSummary(){if(state.summaries.length<=1){toast('Mantenha pelo menos um resumo.');return}const cur=currentSummary();if(!confirm(`Excluir "${cur.title}"?`))return;state.summaries=state.summaries.filter(s=>s.id!==cur.id);state.currentSummary=state.summaries[0].id;save();renderSummaries()}function updateCurrentSummary(){const cur=currentSummary();if(!cur)return;cur.title=$('summary-title').value;cur.md=$('summary-md').value;save();renderSummaries()}
