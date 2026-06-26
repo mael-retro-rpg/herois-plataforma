@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Heróis Improváveis — Apoio ao Narrador</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--panel:#10101a;--card:#13131f;--card2:#0d0d15;--border:#1e1e32;--border2:#2a2a44;
+  --accent:#c8f03a;--accent2:#6b5fff;--accent3:#ff5f7e;--hp:#3affc8;--wp:#c87bff;
+  --text:#cccce0;--muted:#66667d;--font-d:'Orbitron',monospace;--font-b:'Inter',sans-serif;--font-m:'Share Tech Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0} html,body{height:100%;background:radial-gradient(circle at top,#13131f 0,#0a0a0f 55%);color:var(--text);font-family:var(--font-b);overflow:hidden} button,input,textarea,select{font:inherit} button{cursor:pointer}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2)}
+#app{height:100vh;display:flex;flex-direction:column}#header{background:rgba(16,16,26,.98);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-shrink:0}#title h1{font-family:var(--font-d);font-size:.82rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase}#title .sub{font-size:.54rem;color:var(--muted);letter-spacing:2px;margin-top:2px;text-transform:uppercase}.header-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.btn{font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:6px 9px;border:1px solid var(--border2);background:transparent;color:var(--muted);text-transform:uppercase}.btn:hover{border-color:var(--accent2);color:var(--accent2)}.btn.accent{border-color:var(--accent);color:var(--accent)}.btn.accent:hover{background:var(--accent);color:var(--bg)}.btn.blue{border-color:var(--accent2);color:var(--accent2)}.btn.danger{border-color:var(--accent3);color:var(--accent3)}.btn.danger:hover{background:var(--accent3);color:white}.btn.mini{font-size:.48rem;padding:4px 7px}
+#tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}.tab{font-family:var(--font-d);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;padding:10px 16px;color:var(--muted);border:0;border-bottom:2px solid transparent;background:transparent;white-space:nowrap}.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+#main{flex:1;overflow:hidden}.page{height:100%;display:none;overflow:auto;padding:16px}.page.active{display:block}.layout2{display:grid;grid-template-columns:330px 1fr;gap:14px;height:100%}.layout3{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}.panel{background:rgba(16,16,26,.98);border:1px solid var(--border);min-height:0}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);padding:10px 12px}.panel-title{font-family:var(--font-d);font-size:.62rem;letter-spacing:2px;color:var(--accent);text-transform:uppercase}.panel-body{padding:12px}.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.hint{font-family:var(--font-m);font-size:.62rem;color:var(--muted);line-height:1.55}.pill{font-family:var(--font-d);font-size:.48rem;color:var(--muted);border:1px solid var(--border2);padding:2px 6px;text-transform:uppercase}.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}.field label{font-family:var(--font-d);font-size:.5rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}.inp{background:var(--card2);border:1px solid var(--border2);color:var(--text);outline:none;padding:7px 9px}.inp:focus{border-color:var(--accent2)}textarea.inp{resize:vertical;min-height:230px;line-height:1.55}.summary-list{display:flex;flex-direction:column;gap:8px}.summary-item{border:1px solid var(--border2);background:var(--card);padding:9px;cursor:pointer}.summary-item:hover{border-color:var(--accent2)}.summary-item.active{border-color:var(--accent)}.summary-name{font-family:var(--font-d);font-size:.68rem;color:var(--accent);letter-spacing:1px}.summary-meta{font-family:var(--font-m);font-size:.55rem;color:var(--muted);margin-top:4px}.preview{background:#0c0c13;border:1px solid var(--border2);padding:14px;min-height:230px;line-height:1.7;overflow:auto}.preview h1,.preview h2,.preview h3{font-family:var(--font-d);letter-spacing:1px;color:var(--accent);margin:12px 0 8px}.preview h1{font-size:1rem}.preview h2{font-size:.9rem}.preview h3{font-size:.8rem}.preview p{margin:0 0 8px}.preview ul{margin:6px 0 10px 18px}.preview blockquote{margin:8px 0;padding:8px 12px;border-left:2px solid var(--accent2);color:var(--muted);background:rgba(107,95,255,.06)}.preview code{font-family:var(--font-m);background:var(--card);padding:1px 4px;color:var(--accent2)}
+table{width:100%;border-collapse:collapse;background:var(--panel);font-size:.76rem}th{font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--card2);border:1px solid var(--border);padding:8px;text-align:left}td{border:1px solid var(--border);padding:5px;vertical-align:top}td input,td textarea,td select{width:100%;background:transparent;border:none;color:var(--text);outline:none;font-family:var(--font-m);font-size:.72rem}td textarea{resize:vertical;min-height:30px}.num{text-align:center}.hp{color:var(--hp)!important}.wp{color:var(--wp)!important}.accent{color:var(--accent)!important}.danger{color:var(--accent3)!important}.muted{color:var(--muted)!important}.row-actions{white-space:nowrap;text-align:center}.totals{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.total-card{background:var(--card);border:1px solid var(--border2);padding:9px 11px;min-width:124px}.total-label{font-family:var(--font-d);font-size:.48rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase}.total-val{font-family:var(--font-d);font-size:1.15rem;color:var(--accent);margin-top:2px}.rule-grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:12px}.rule-card{background:var(--card);border:1px solid var(--border2);padding:14px}.rule-card h3{font-family:var(--font-d);font-size:.67rem;letter-spacing:2px;color:var(--accent2);text-transform:uppercase;margin-bottom:9px}.rule-card p,.rule-card li{font-size:.76rem;line-height:1.65;color:var(--text)}.rule-card ul{padding-left:18px}.box{border-left:3px solid var(--accent);background:rgba(200,240,58,.04);padding:12px 14px;margin:10px 0;font-size:.78rem;line-height:1.65}.box.blue{border-color:var(--accent2);background:rgba(107,95,255,.06)}.box.red{border-color:var(--accent3);background:rgba(255,95,126,.06)}.xp-card{background:var(--card);border:1px solid var(--border2);padding:12px}.xp-title{font-family:var(--font-d);font-size:.65rem;letter-spacing:1px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}.xp-row{display:grid;grid-template-columns:1fr 54px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}.xp-row:last-child{border-bottom:none}.xp-row label{font-size:.75rem;color:var(--text);line-height:1.35}.xp-row input{width:18px;height:18px}.xp-val{font-family:var(--font-m);color:var(--accent);text-align:right}.xp-val.neg{color:var(--accent3)}.xp-tools{display:grid;grid-template-columns:280px 1fr;gap:14px}.player-xp-list{display:flex;flex-direction:column;gap:8px}.player-xp-card{border:1px solid var(--border2);background:var(--card);padding:10px;cursor:pointer}.player-xp-card.active{border-color:var(--accent)}.px-name{font-family:var(--font-d);font-size:.66rem;color:var(--accent);letter-spacing:1px}.px-meta{font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:3px}.spend-table td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.68rem}.diff-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}.diff-name{font-family:var(--font-d);font-size:.61rem;color:var(--accent);width:142px}.diff-num{font-family:var(--font-m);width:28px}.diff-ex{font-size:.68rem;color:var(--muted)}#toast{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--accent);color:var(--text);padding:9px 12px;font-family:var(--font-m);font-size:.68rem;display:none;z-index:999}
+@media(max-width:980px){html,body{overflow:auto}#app{height:auto;min-height:100vh}.layout2,.layout3,.rule-grid,.xp-tools{grid-template-columns:1fr;height:auto}.page{overflow:visible}.header-actions{justify-content:flex-start}#header{align-items:flex-start;flex-direction:column}}
+@media print{html,body{background:white;color:#111;overflow:visible}#header,#tabs,.toolbar,.row-actions,.btn,#toast{display:none!important}.page{display:block!important;overflow:visible;padding:0}.page:not(.active){display:none!important}.panel,.rule-card,.xp-card{border:1px solid #999;background:white}.panel-head{border-bottom:1px solid #999}.panel-title,.summary-name,.total-val,.xp-title{color:#111}.inp,table,th,td,.preview{border-color:#999;color:#111;background:white}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="title"><h1>⚡ Apoio ao Narrador</h1><div class="sub">Sistema 4C · Heróis Improváveis · Resumos, combate, XP e regras rápidas</div></div>
+    <div class="header-actions">
+      <button class="btn accent" onclick="loadSheetsFromServer()">↻ Sincronizar Fichas</button>
+      <button class="btn" onclick="exportData()">⬇ Exportar</button>
+      <button class="btn" onclick="document.getElementById('import-file').click()">⬆ Importar</button>
+      <button class="btn" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn danger" onclick="resetAll()">Limpar Tudo</button>
+      <input id="import-file" type="file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+  <div id="tabs">
+    <button class="tab active" onclick="showPage('story',this)">📜 História</button>
+    <button class="tab" onclick="showPage('combat',this)">⚔ Combate</button>
+    <button class="tab" onclick="showPage('xp',this)">⭐ Experiência</button>
+    <button class="tab" onclick="showPage('rules',this)">📋 Regras rápidas</button>
+  </div>
+  <div id="main">
+    <section id="page-story" class="page active">
+      <div class="layout2">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Resumos da história</div><button class="btn mini accent" onclick="newSummary()">+ Novo</button></div>
+          <div class="panel-body"><div class="summary-list" id="summary-list"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Editor Markdown</div><div class="toolbar" style="margin:0"><button class="btn mini" onclick="duplicateSummary()">Duplicar</button><button class="btn mini danger" onclick="deleteSummary()">Excluir</button></div></div>
+          <div class="panel-body">
+            <div class="field"><label>Título</label><input class="inp" id="summary-title" oninput="updateCurrentSummary()" placeholder="Ex.: Sessão 01 — A Brecha"></div>
+            <div class="layout3">
+              <div class="field"><label>Texto com Markdown</label><textarea class="inp" id="summary-md" oninput="updateCurrentSummary()" placeholder="# Resumo\n\n- Evento importante\n- NPC encontrado\n\n**Gancho:** próximo passo..."></textarea></div>
+              <div class="field"><label>Prévia</label><div class="preview" id="summary-preview"></div></div>
+            </div>
+            <div class="hint">Suporte simples: # títulos, - listas, **negrito**, *itálico*, `código` e &gt; citações.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="page-combat" class="page">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Tabela de combate</div><span class="pill">Iniciativa · Vitalidade · Vontade · Condições</span></div>
+        <div class="panel-body">
+          <div class="toolbar"><button class="btn accent" onclick="addCombatRow()">+ Linha</button><button class="btn" onclick="sortCombat()">Ordenar Iniciativa</button><button class="btn" onclick="resetCombatValues()">Resetar VIT/VON</button><button class="btn" onclick="clearCombatNotes()">Limpar Condições</button></div>
+          <table id="combat-table"><thead><tr><th>Personagem</th><th>Jogador</th><th>INI</th><th>VIT Atual</th><th>VIT Máx.</th><th>VON Atual</th><th>VON Máx.</th><th>Condição / Notas</th><th></th></tr></thead><tbody></tbody></table>
+          <div class="totals"><div class="total-card"><div class="total-label">Participantes</div><div class="total-val" id="combat-count">0</div></div><div class="total-card"><div class="total-label">Menor VIT</div><div class="total-val hp" id="combat-low-hp">—</div></div><div class="total-card"><div class="total-label">Menor VON</div><div class="total-val wp" id="combat-low-wp">—</div></div></div>
+        </div>
+      </div>
+    </section>
+    <section id="page-xp" class="page">
+      <div class="xp-tools">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Jogadores</div><button class="btn mini accent" onclick="addXpRow()">+ Jogador</button></div>
+          <div class="panel-body"><div class="player-xp-list" id="player-xp-list"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Cálculo de experiência</div><span class="pill">baseado no Fastplay</span></div>
+          <div class="panel-body">
+            <div class="toolbar"><button class="btn accent" onclick="commitSelectedXp()">✓ Aplicar XP</button><button class="btn" onclick="clearSelectedCriteria()">Limpar critérios</button><button class="btn" onclick="applyXpToAll()">Aplicar valor a todos</button><input class="inp" id="xp-all" type="number" value="1" style="width:70px;padding:5px 7px"></div>
+            <div class="layout3">
+              <div>
+                <div class="field"><label>Jogador</label><input class="inp" id="xp-player" oninput="editSelectedXp('player',this.value)"></div>
+                <div class="field"><label>Personagem</label><input class="inp" id="xp-character" oninput="editSelectedXp('character',this.value)"></div>
+                <div class="layout3" style="grid-template-columns:1fr 1fr">
+                  <div class="field"><label>XP atual</label><input class="inp" id="xp-current" type="number" oninput="editSelectedXp('current',this.value)"></div>
+                  <div class="field"><label>Ajuste manual</label><input class="inp" id="xp-manual" type="number" oninput="editSelectedXp('manual',this.value)"></div>
+                </div>
+                <div class="field"><label>Anotações de XP</label><textarea class="inp" id="xp-notes" style="min-height:120px" oninput="editSelectedXp('notes',this.value)"></textarea></div>
+              </div>
+              <div>
+                <div class="totals" style="margin:0 0 10px"><div class="total-card"><div class="total-label">XP da sessão</div><div class="total-val" id="xp-session-total">0</div></div><div class="total-card"><div class="total-label">Total após aplicar</div><div class="total-val" id="xp-after-total">0</div></div></div>
+                <div class="xp-card" style="margin-bottom:10px"><div class="xp-title">Atuação narrativa</div><div id="xp-narrative"></div></div>
+                <div class="xp-card"><div class="xp-title">Combate</div><div id="xp-combat"></div></div>
+              </div>
+            </div>
+            <div class="box blue"><strong>Uso sugerido:</strong> marque os critérios ao final da sessão ou batalha. O campo “Ajuste manual” serve para bônus, penalidades ou decisão do narrador.</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-head"><div class="panel-title">Custos de melhoria</div></div>
+        <div class="panel-body">
+          <table class="spend-table"><tr><th>Melhoria</th><th>Custo</th></tr><tr><td>Aumentar atributo até nível 9</td><td>10 XP</td></tr><tr><td>Aumentar atributo de 9 para 12</td><td>20 XP</td></tr><tr><td>Adquirir ou aprimorar um poder</td><td>5 XP</td></tr><tr><td>Remover um complicador de poder</td><td>10 XP</td></tr></table>
+          <div class="hint">Atributos acima de 12 indicam capacidades sobrenaturais e exigem justificativa narrativa e aprovação do narrador.</div>
+        </div>
+      </div>
+    </section>
+    <section id="page-rules" class="page">
+      <div class="rule-grid">
+        <div class="rule-card"><h3>Teste padrão</h3><p>Role <strong>2d6 + atributo</strong>. Se o total for igual ou maior que a dificuldade, a ação é bem-sucedida.</p><div class="box">Use quando a ação for incerta e tiver impacto real na história.</div></div>
+        <div class="rule-card"><h3>Derivados</h3><table><tr><th>Campo</th><th>Fórmula</th></tr><tr><td>Vitalidade</td><td>10 + RES ÷ 2</td></tr><tr><td>Vontade</td><td>10 + SAB ÷ 2</td></tr><tr><td>Iniciativa</td><td>2 + AGI + bônus</td></tr><tr><td>Defesa</td><td>4 + RES + bônus</td></tr><tr><td>Res. Mágica</td><td>4 + SAB</td></tr></table></div>
+        <div class="rule-card"><h3>Dificuldades</h3><div class="diff-row"><span class="diff-name">Fácil</span><span class="diff-num">6</span><span class="diff-ex">subir árvore baixa</span></div><div class="diff-row"><span class="diff-name">Médio</span><span class="diff-num">8</span><span class="diff-ex">muro simples</span></div><div class="diff-row"><span class="diff-name">Difícil</span><span class="diff-num">10</span><span class="diff-ex">nadar contra correnteza</span></div><div class="diff-row"><span class="diff-name">Desafiador</span><span class="diff-num">12</span><span class="diff-ex">saltar de veículo</span></div><div class="diff-row"><span class="diff-name">Formidável</span><span class="diff-num">14</span><span class="diff-ex">vento forte</span></div><div class="diff-row"><span class="diff-name">Heroico</span><span class="diff-num">16</span><span class="diff-ex">veneno mortal</span></div><div class="diff-row"><span class="diff-name">Lendário</span><span class="diff-num">18</span><span class="diff-ex">torre em queda</span></div><div class="diff-row"><span class="diff-name">Quase impossível</span><span class="diff-num">20</span><span class="diff-ex">queda extrema</span></div><div class="diff-row"><span class="diff-name">Prat. impossível</span><span class="diff-num">22</span><span class="diff-ex">desmoronamento</span></div></div>
+        <div class="rule-card"><h3>Extremos</h3><div class="box"><strong>Duplo 6:</strong> atributo dobrado no cálculo. Em combate, ataque crítico soma o valor total do ATQ ao dano.</div><div class="box red"><strong>Duplo 1:</strong> atributo reduzido à metade. Em ataque catastrófico, o atacante sofre dano igual ao próprio ATQ.</div></div>
+        <div class="rule-card"><h3>Vontade</h3><ul><li>Declare antes da rolagem.</li><li>Recebe <strong>+4</strong> ao atributo do teste.</li><li>Custa 1 VON; se falhar, perde mais 1 VON.</li><li>Quatro falhas seguidas com Vontade causam perda permanente de 1 VON.</li></ul></div>
+        <div class="rule-card"><h3>Ataque e dano</h3><p><strong>Ataque comum:</strong> 2d6 + ATQ contra Defesa. Se superar, dano = diferença + bônus de dano físico.</p><p><strong>Ataque mágico:</strong> 2d6 + SAB contra Resistência Mágica. Dano = diferença + bônus de dano mágico.</p></div>
+        <div class="rule-card"><h3>Ações rápidas</h3><table><tr><th>Ação</th><th>Uso</th></tr><tr><td>Livre</td><td>falar, perceber</td></tr><tr><td>Movimento</td><td>deslocar, aparar</td></tr><tr><td>Comum</td><td>atacar, poder, objeto</td></tr><tr><td>Completa</td><td>correr, agarrar, explorar fraqueza</td></tr></table></div>
+        <div class="rule-card"><h3>Vitalidade zero</h3><div class="box red">Ao chegar a 0 VIT, role RES contra dificuldade 14. Sucesso: fica com 1 VIT temporário. Falha: morte.</div></div>
+      </div>
+    </section>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const STORAGE_KEY='hi_narrador_apoio_v2';
+const XP_CRITERIA={
+ narrative:[['Criatividade',1],['Coerência com o personagem',1],['Boa conduta / trabalho em equipe',1],['Superar dificuldades',2],['Equilíbrio geral',1],['Equilíbrio geral extra',1],['Equilíbrio geral excepcional',1],['Impulsividade / imprudência',-1],['Incoerência narrativa',-1]],
+ combat:[['Criatividade em combate',1],['Superar dificuldades',1],['Sobrevivência',1],['Permanecer ileso',1],['Equilíbrio geral',1],['Equilíbrio geral extra',1],['Equilíbrio geral excepcional',1],['Imprudência em combate',-1],['Derrota',-1]]
+};
+let state={summaries:[],currentSummary:null,combat:[],xp:[],selectedXp:null};
+const $=id=>document.getElementById(id);
+function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.style.display='none',2300)}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function load(){try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state={...state,...JSON.parse(raw)}}catch{} if(!state.summaries.length){const id=uuid();state.summaries=[{id,title:'Resumo da Campanha',md:'# Resumo da Campanha\n\n- Situação inicial\n- NPCs importantes\n- Objetivo atual\n\n**Gancho:** descreva aqui o próximo passo.'}];state.currentSummary=id} renderAll();save()}
+function uuid(){return (crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2))}
+function showPage(name,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));$('page-'+name).classList.add('active');btn.classList.add('active')}
+function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+function mdToHtml(md){const lines=esc(md).split('\n');let out='',inList=false;for(const line of lines){if(/^###\s+/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<h3>${inlineMd(line.replace(/^###\s+/,''))}</h3>`}else if(/^##\s+/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<h2>${inlineMd(line.replace(/^##\s+/,''))}</h2>`}else if(/^#\s+/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<h1>${inlineMd(line.replace(/^#\s+/,''))}</h1>`}else if(/^[-*]\s+/.test(line)){if(!inList){out+='<ul>';inList=true}out+=`<li>${inlineMd(line.replace(/^[-*]\s+/,''))}</li>`}else if(/^&gt;\s?/.test(line)){if(inList){out+='</ul>';inList=false}out+=`<blockquote>${inlineMd(line.replace(/^&gt;\s?/,''))}</blockquote>`}else if(line.trim()===''){if(inList){out+='</ul>';inList=false}out+='<br>'}else{if(inList){out+='</ul>';inList=false}out+=`<p>${inlineMd(line)}</p>`}}if(inList)out+='</ul>';return out}
+function inlineMd(s){return String(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>')}
+function currentSummary(){return state.summaries.find(x=>x.id===state.currentSummary)||state.summaries[0]}
+function renderSummaries(){const cur=currentSummary();$('summary-list').innerHTML=state.summaries.map(s=>`<div class="summary-item ${cur&&s.id===cur.id?'active':''}" onclick="selectSummary('${s.id}')"><div class="summary-name">${esc(s.title||'Sem título')}</div><div class="summary-meta">${(s.md||'').length} caracteres</div></div>`).join('');$('summary-title').value=cur?.title||'';$('summary-md').value=cur?.md||'';$('summary-preview').innerHTML=mdToHtml(cur?.md||'')}
+function selectSummary(id){state.currentSummary=id;save();renderSummaries()}function newSummary(){const s={id:uuid(),title:'Novo resumo',md:'# Novo resumo\n\n- '};state.summaries.unshift(s);state.currentSummary=s.id;save();renderSummaries()}function duplicateSummary(){const cur=currentSummary();if(!cur)return;const s={id:uuid(),title:(cur.title||'Resumo')+' — cópia',md:cur.md||''};state.summaries.unshift(s);state.currentSummary=s.id;save();renderSummaries()}function deleteSummary(){if(state.summaries.length<=1){toast('Mantenha pelo menos um resumo.');return}const cur=currentSummary();if(!confirm(`Excluir "${cur.title}"?`))return;state.summaries=state.summaries.filter(s=>s.id!==cur.id);state.currentSummary=state.summaries[0].id;save();renderSummaries()}function updateCurrentSummary(){const cur=currentSummary();if(!cur)return;cur.title=$('summary-title').value;cur.md=$('summary-md').value;save();renderSummaries()}
+function calcDerived(s){const res=Number(s.res||0),sab=Number(s.sab||0),agi=Number(s.agi||0);return{ini:2+agi,vit:10+Math.floor(res/2),von:10+Math.floor(sab/2)}}
+function addCombatRow(row={}){state.combat.push({id:uuid(),name:row.name||'',player:row.player||'',ini:Number(row.ini||0),vitCur:Number(row.vitCur??row.vitMax??0),vitMax:Number(row.vitMax||0),vonCur:Number(row.vonCur??row.vonMax??0),vonMax:Number(row.vonMax||0),notes:row.notes||''});save();renderCombat()}
+function renderCombat(){const tb=$('combat-table').querySelector('tbody');tb.innerHTML=state.combat.map(r=>`<tr><td><input value="${esc(r.name)}" onchange="editCombat('${r.id}','name',this.value)"></td><td><input value="${esc(r.player)}" onchange="editCombat('${r.id}','player',this.value)"></td><td><input class="num accent" type="number" value="${r.ini}" onchange="editCombat('${r.id}','ini',this.value)"></td><td><input class="num hp" type="number" value="${r.vitCur}" onchange="editCombat('${r.id}','vitCur',this.value)"></td><td><input class="num" type="number" value="${r.vitMax}" onchange="editCombat('${r.id}','vitMax',this.value)"></td><td><input class="num wp" type="number" value="${r.vonCur}" onchange="editCombat('${r.id}','vonCur',this.value)"></td><td><input class="num" type="number" value="${r.vonMax}" onchange="editCombat('${r.id}','vonMax',this.value)"></td><td><textarea onchange="editCombat('${r.id}','notes',this.value)">${esc(r.notes)}</textarea></td><td class="row-actions"><button class="btn mini danger" onclick="removeCombat('${r.id}')">✕</button></td></tr>`).join('');$('combat-count').textContent=state.combat.length;const vit=state.combat.map(r=>Number(r.vitCur)).filter(Number.isFinite);const von=state.combat.map(r=>Number(r.vonCur)).filter(Number.isFinite);$('combat-low-hp').textContent=vit.length?Math.min(...vit):'—';$('combat-low-wp').textContent=von.length?Math.min(...von):'—'}
+function editCombat(id,key,val){const r=state.combat.find(x=>x.id===id);if(!r)return;r[key]=['ini','vitCur','vitMax','vonCur','vonMax'].includes(key)?Number(val||0):val;save();renderCombat()}function removeCombat(id){state.combat=state.combat.filter(r=>r.id!==id);save();renderCombat()}function sortCombat(){state.combat.sort((a,b)=>Number(b.ini||0)-Number(a.ini||0));save();renderCombat()}function resetCombatValues(){state.combat.forEach(r=>{r.vitCur=r.vitMax;r.vonCur=r.vonMax});save();renderCombat()}function clearCombatNotes(){state.combat.forEach(r=>r.notes='');save();renderCombat()}
+function addXpRow(row={}){const id=uuid();state.xp.push({id,player:row.player||'',character:row.character||'',current:Number(row.current||0),manual:Number(row.manual||0),criteria:{},notes:row.notes||''});state.selectedXp=id;save();renderXp()}
+function selectedXp(){return state.xp.find(x=>x.id===state.selectedXp)||state.xp[0]}
+function renderXp(){if(!state.xp.length){$('player-xp-list').innerHTML='<div class="hint">Nenhum jogador cadastrado. Use “+ Jogador” ou sincronize as fichas.</div>';$('xp-player').value='';$('xp-character').value='';$('xp-current').value=0;$('xp-manual').value=0;$('xp-notes').value='';$('xp-narrative').innerHTML='';$('xp-combat').innerHTML='';updateXpTotals();return} if(!selectedXp())state.selectedXp=state.xp[0].id;const sel=selectedXp();$('player-xp-list').innerHTML=state.xp.map(r=>`<div class="player-xp-card ${r.id===sel.id?'active':''}" onclick="selectXp('${r.id}')"><div class="px-name">${esc(r.character||'Sem personagem')}</div><div class="px-meta">${esc(r.player||'Sem jogador')} · XP ${Number(r.current||0)} · sessão ${calcXp(r)}</div></div>`).join('');$('xp-player').value=sel.player||'';$('xp-character').value=sel.character||'';$('xp-current').value=sel.current||0;$('xp-manual').value=sel.manual||0;$('xp-notes').value=sel.notes||'';renderCriteria('narrative','xp-narrative',sel);renderCriteria('combat','xp-combat',sel);updateXpTotals()}
+function renderCriteria(group,container,sel){$(container).innerHTML=XP_CRITERIA[group].map(([label,val],i)=>{const key=group+'_'+i;return `<div class="xp-row"><label><input type="checkbox" ${sel.criteria?.[key]?'checked':''} onchange="toggleCriteria('${group}',${i},this.checked)"> ${esc(label)}</label><div class="xp-val ${val<0?'neg':''}">${val>0?'+':''}${val}</div></div>`}).join('')}
+function calcXp(r){let t=Number(r.manual||0);for(const [group,items] of Object.entries(XP_CRITERIA)){items.forEach(([,val],i)=>{if(r.criteria?.[group+'_'+i])t+=Number(val)})}return t}
+function updateXpTotals(){const r=selectedXp();const session=r?calcXp(r):0;$('xp-session-total').textContent=session;$('xp-after-total').textContent=r?Number(r.current||0)+session:0}
+function selectXp(id){state.selectedXp=id;save();renderXp()}function editSelectedXp(key,val){const r=selectedXp();if(!r)return;r[key]=['current','manual'].includes(key)?Number(val||0):val;save();renderXp()}function toggleCriteria(group,i,checked){const r=selectedXp();if(!r)return;if(!r.criteria)r.criteria={};r.criteria[group+'_'+i]=checked;save();renderXp()}function clearSelectedCriteria(){const r=selectedXp();if(!r)return;r.criteria={};r.manual=0;save();renderXp()}function commitSelectedXp(){const r=selectedXp();if(!r)return;const session=calcXp(r);r.current=Number(r.current||0)+session;r.manual=0;r.criteria={};save();renderXp();toast(`XP aplicado: ${session>=0?'+':''}${session}`)}function applyXpToAll(){const n=Number($('xp-all').value||0);state.xp.forEach(r=>r.manual=Number(r.manual||0)+n);save();renderXp()}function removeXp(id){state.xp=state.xp.filter(r=>r.id!==id);state.selectedXp=state.xp[0]?.id||null;save();renderXp()}
+async function loadSheetsFromServer(){const token=localStorage.getItem('hi_token');if(!token){toast('Faça login na plataforma antes de sincronizar.');return}try{const res=await fetch('/api/sheets',{headers:{Authorization:`Bearer ${token}`}});if(!res.ok)throw new Error();const list=await res.json();list.forEach(s=>{const d=calcDerived(s);const c=state.combat.find(r=>r.player===s.username||r.name===s.name);if(c){Object.assign(c,{name:s.name||s.username,player:s.username,ini:d.ini,vitMax:d.vit,vitCur:s.vitCur??c.vitCur??d.vit,vonMax:d.von,vonCur:s.vonCur??c.vonCur??d.von})}else state.combat.push({id:uuid(),name:s.name||s.username,player:s.username,ini:d.ini,vitMax:d.vit,vitCur:s.vitCur??d.vit,vonMax:d.von,vonCur:s.vonCur??d.von,notes:''});const x=state.xp.find(r=>r.player===s.username||r.character===s.name);if(x){x.player=s.username;x.character=s.name||s.username;x.current=Number(s.xpTotal||x.current||0)}else state.xp.push({id:uuid(),player:s.username,character:s.name||s.username,current:Number(s.xpTotal||0),manual:0,criteria:{},notes:''})});if(!state.selectedXp&&state.xp[0])state.selectedXp=state.xp[0].id;save();renderAll();toast('Fichas sincronizadas.')}catch{toast('Não foi possível sincronizar fichas.')}}
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='apoio_narrador_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)}
+function importData(ev){const file=ev.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);state={...state,...data};save();renderAll();toast('Dados importados.')}catch{toast('Arquivo inválido.')}ev.target.value=''};reader.readAsText(file)}
+function resetAll(){if(!confirm('Limpar todos os dados locais deste apoio?'))return;localStorage.removeItem(STORAGE_KEY);state={summaries:[],currentSummary:null,combat:[],xp:[],selectedXp:null};load();toast('Dados locais limpos.')}function renderAll(){renderSummaries();renderCombat();renderXp()}load();
+</script>
+</body>
+</html>
