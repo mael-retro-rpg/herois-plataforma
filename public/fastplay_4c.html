@@ -157,7 +157,8 @@ td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.7rem;let
 </div>
 
 <div id="tabs">
-  <div class="tab active" onclick="showTab('regras')">📋 Regras</div>
+  <div class="tab active" onclick="showTab('cenario')">🌆 Cenário</div>
+  <div class="tab" onclick="showTab('regras')">📋 Regras</div>
   <div class="tab" onclick="showTab('combate')">⚔️ Combate</div>
   <div class="tab" onclick="showTab('poderes')">✨ Poderes</div>
   <div class="tab" onclick="showTab('classes')">🎭 Classes</div>
@@ -170,9 +171,85 @@ td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.7rem;let
 <div id="content">
 
 <!-- ══════════════════════════════════════
+     CENÁRIO
+══════════════════════════════════════ -->
+<div class="section active" id="tab-cenario">
+  <h2>Cenário — Heróis Improváveis</h2>
+
+  <div class="box">
+    <strong>Riacho Doce, interior do Brasil.</strong> Uma cidade tranquila o suficiente para que nada de verdadeiramente estranho jamais acontecesse aqui. Até agora.
+  </div>
+
+  <h3>A Cidade</h3>
+  <p>Riacho Doce é daquelas cidades que aparecem no mapa mas nunca nas notícias. Tem shopping, tem praça, tem um time de futebol de várzea e uma rádio AM que toca sertanejo das 6h às 22h sem interrupção. É o tipo de lugar onde todo mundo se conhece e onde "aconteceu alguma coisa estranha" normalmente significa um cachorro latindo demais ou um vizinho reformando o banheiro às 23h.</p>
+  <p>Mas nas últimas semanas, algo mudou. As notícias locais começaram a registrar <strong>ocorrências inexplicáveis</strong>: uma criatura descrita como "feita de pixels" foi filmada destruindo uma cabine de energia no bairro do Rio Claro. Um grupo de adolescentes relatou ser perseguido por "monstros de videogame" no parque municipal — os depoimentos foram descartados pela polícia como trote. O prefeito deu uma coletiva garantindo que "tudo está sob controle" sem especificar o quê, exatamente, estava sendo controlado.</p>
+
+  <h3>O Colégio Estadual Dom Álvaro</h3>
+  <p>No centro de Riacho Doce, o <strong>Colégio Estadual Dom Álvaro</strong> é uma instituição de reputação mediana — bom o suficiente para que os pais não reclamem, velho o suficiente para que o ar-condicionado nunca funcione direito. Tem três quadras, uma biblioteca com computadores de 2011 e um pátio coberto que vira salão de festa nas formaturas.</p>
+  <p>É nesse pátio que, nos intervalos e após as aulas, um grupo de estudantes se reúne em torno de uma mesa improvisada com caixas de papelão e dados espalhados por toda parte. Eles jogam RPG.</p>
+
+  <h3>O Grupo</h3>
+  <p>Vocês são estudantes do Dom Álvaro, entre 15 e 17 anos, reunidos pelo mesmo hobby improvável: RPG de mesa. Cada um chegou ao grupo por um caminho diferente — uns pela curiosidade, outros pelo tédio, um ou dois arrastados por um amigo que "prometeu que era rápido" e nunca mais saiu.</p>
+  <p>O sistema que vocês jogam é o <strong>Sistema 4C</strong>, num suplemento chamado <strong>Heróis do Valor</strong> — uma campanha de heróis mascarados e ameaças sobrenaturais escrita e narrada pelo próprio professor de Física, <strong>Sr. Ângelo Rodrigues</strong>.</p>
+
+  <div class="card" style="border-color:var(--accent2)">
+    <div class="card-title">👨‍🏫 Sr. Ângelo Rodrigues</div>
+    <p style="font-size:.78rem;color:var(--text);line-height:1.7;margin:0">Professor de Física do Dom Álvaro há onze anos. Quarenta e poucos, cabelos grisalhos nas têmporas, sempre com uma caneta atrás da orelha e uma xícara de café na mão que nunca parece esvaziar. É o tipo de professor que explica a Segunda Lei de Newton usando exemplos de batalhas de RPG e que uma vez cancelou uma prova para terminar uma sessão de jogo "num momento narrativo muito importante".</p>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px;margin-bottom:0">Narrador do <em>Heróis do Valor</em> e, até onde vocês sabem, criador do suplemento. Tem um caderno de capa dura onde anota tudo — encontros, NPCs, tramas, e coisas que ninguém mais consegue decifrar. Ultimamente, está estranho. Mais quieto. Às vezes para no meio da aula e olha pela janela com uma expressão que vocês não sabem nomear.</p>
+  </div>
+
+  <h3>Heróis do Valor</h3>
+  <p>O suplemento que vocês jogam é uma campanha de heróis mascarados numa cidade fictícia ameaçada por criaturas chamadas <strong>Ecos</strong> — seres que emergem de "brechas entre mundos" e se manifestam assumindo formas tiradas do imaginário coletivo: monstros de videogame, criaturas de filmes, personagens de quadrinhos distorcidos e corrompidos. Na ficção do jogo, os heróis recebem seus poderes de um misterioso transmissor de rádio que ninguém consegue rastrear.</p>
+  <p>É um jogo. Era um jogo.</p>
+
+  <h3>A Brecha</h3>
+  <p>Na tarde de uma quarta-feira comum — 13h47, intervalo do almoço, todos com o celular na mão — a mensagem chegou. Remetente desconhecido. Sem foto de perfil. O mesmo texto para todos, ao mesmo tempo:</p>
+
+  <div class="box red" style="font-family:var(--font-m);font-size:.8rem;line-height:1.8;text-align:center">
+    <em>"Vocês foram escolhidos. A invasão já começou.<br>
+    Os poderes que vocês sempre jogaram agora são reais.<br>
+    Encontrem-se no pátio. Agora."</em>
+  </div>
+
+  <p>Vocês se entreolharam. Alguém disse que era ARG. Alguém disse que era o Ângelo pregando uma peça. Alguém não disse nada e foi andando para o pátio.</p>
+  <p>Aí o chão tremeu. Vieram os gritos do corredor. E pela janela da sala de aula, vocês viram algo que não deveria existir fora de uma sessão de RPG.</p>
+  <p>E aí os trajes apareceram. Do nada. Em vocês. Como se sempre tivessem estado lá, esperando.</p>
+
+  <h3>O que vocês sabem (e o que não sabem)</h3>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title" style="color:var(--hp)">✅ Sabem</div>
+      <ul style="margin:0;padding-left:16px">
+        <li>Os Ecos do jogo do Ângelo são reais</li>
+        <li>Seus poderes de personagem funcionam em vocês mesmos</li>
+        <li>A cidade está sendo invadida</li>
+        <li>Alguém os escolheu — e sabia seus nomes</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--accent3)">❓ Não sabem</div>
+      <ul style="margin:0;padding-left:16px">
+        <li>Quem mandou a mensagem</li>
+        <li>Por que justamente vocês</li>
+        <li>O que o Sr. Ângelo tem a ver com isso</li>
+        <li>Se os Ecos têm um objetivo — ou um líder</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Tom da Aventura</h3>
+  <p>Heróis Improváveis é uma homenagem às séries <strong>Super Sentai</strong> e aos RPGs de mesa clássicos — com tudo que isso implica: transformações épicas com trilha sonora imaginária, golpes especiais com nomes gritados em voz alta, rivalidades e amizades que se desenvolvem no meio de batalhas, e uma quantidade não razoável de criaturas derrotadas fazendo <em>"NOOOO"</em> antes de desaparecerem em pixels.</p>
+  <p>Mas também tem o lado humano: vocês são adolescentes. Têm prova na sexta. Têm problemas em casa. Têm sentimentos uns pelos outros que ninguém ainda teve coragem de nomear. Salvar o mundo é importante, mas às vezes a coisa mais difícil da sessão é pedir desculpas para alguém.</p>
+
+  <div class="box">
+    <strong>Regra de ouro do tom:</strong> quando a situação ficar séria demais, alguém pode fazer uma piada. Quando a piada ficar fácil demais, a situação fica séria. O equilíbrio entre esses dois estados é onde a aventura vive.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      REGRAS
 ══════════════════════════════════════ -->
-<div class="section active" id="tab-regras">
+<div class="section" id="tab-regras">
   <h2>Regras Básicas</h2>
 
   <h3>O que você precisa</h3>
@@ -288,7 +365,7 @@ td:first-child{color:var(--accent);font-family:var(--font-d);font-size:.7rem;let
     <div class="flow-num">1</div>
     <div class="flow-body">
       <div class="flow-title">Iniciativa</div>
-      <div class="flow-text">Cada participante rola <strong>2d6 + AGI + 2</strong>. Maior total age primeiro. Em caso de empate, agem simultaneamente.</div>
+      <div class="flow-text">Cada participante rola <strong>2d6 + AGI</strong>. Maior total age primeiro. Em caso de empate, agem simultaneamente.</div>
     </div>
   </div>
   <div class="flow-step">
