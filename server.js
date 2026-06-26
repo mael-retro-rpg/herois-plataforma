@@ -422,6 +422,13 @@ io.on('connection', (socket) => {
     saveAndBroadcast(msg);
   });
 
+  // ── CLEAR LOG (master only) ──
+  socket.on('clear_log', () => {
+    if (user.role !== 'master') return;
+    writeDB('history', {});
+    io.to('session').emit('log_cleared', { by: getAuthorLabel(user.username, user.displayName) });
+  });
+
   // ── DISCONNECT ──
   socket.on('disconnect', () => {
     onlineUsers.delete(socket.id);
@@ -442,17 +449,15 @@ function emitUsersStatus() {
   const onlineList = Array.from(onlineUsers.values());
   io.to('session').emit('users_online', onlineList);
 
-  // users_status: all registered users with online flag
+  // users_status: ALL registered users (including master) with online flag
   const users = readDB('users');
   const onlineUsernames = new Set(onlineList.map(u => u.username));
-  const statusList = Object.values(users)
-    .filter(u => u.role !== 'master')
-    .map(u => ({
-      username: u.username,
-      displayName: getAuthorLabel(u.username, u.displayName),
-      role: u.role,
-      online: onlineUsernames.has(u.username)
-    }));
+  const statusList = Object.values(users).map(u => ({
+    username: u.username,
+    displayName: getAuthorLabel(u.username, u.displayName),
+    role: u.role,
+    online: onlineUsernames.has(u.username)
+  }));
   io.to('session').emit('users_status', statusList);
 }
 
