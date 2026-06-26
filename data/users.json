@@ -33,5 +33,12 @@
     "displayName": "Lisa",
     "role": "player",
     "createdAt": "2026-06-25T21:31:02.629Z"
+  },
+  "KIBe1207": {
+    "username": "KIBe1207",
+    "password": "$2a$10$R3VgQ7FSUKSguHP20xCY7u3m1s5ZxZKKMmQyY9dmI9PCgrBTiFt/i",
+    "displayName": "KIBe1207",
+    "role": "player",
+    "createdAt": "2026-06-26T16:04:11.848Z"
   }
 }
