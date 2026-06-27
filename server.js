@@ -266,6 +266,36 @@ app.get('/api/history', authMiddleware, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════
+// BACKUP / RESTORE ROUTES
+// ══════════════════════════════════════════════════════════════════
+
+// Full backup — returns all 4 JSON databases in one object
+app.get('/api/backup', authMiddleware, masterOnly, (req, res) => {
+  res.json({
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    users:    readDB('users'),
+    sheets:   readDB('sheets'),
+    sessions: readDB('sessions'),
+    history:  readDB('history')
+  });
+});
+
+// Full restore — receives backup object and overwrites all databases
+app.post('/api/restore', authMiddleware, masterOnly, (req, res) => {
+  const { users, sheets, sessions, history } = req.body;
+  if (!users || !sheets || !sessions || !history)
+    return res.status(400).json({ error: 'Backup incompleto — faltam campos obrigatórios' });
+  writeDB('users',    users);
+  writeDB('sheets',   sheets);
+  writeDB('sessions', sessions);
+  writeDB('history',  history);
+  // Notify all connected clients to reload
+  io.to('session').emit('server_restored');
+  res.json({ ok: true, restoredAt: new Date().toISOString() });
+});
+
+// ══════════════════════════════════════════════════════════════════
 // SOCKET.IO
 // ══════════════════════════════════════════════════════════════════
 

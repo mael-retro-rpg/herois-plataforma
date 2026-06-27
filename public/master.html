@@ -255,6 +255,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         <button class="stb-btn" onclick="openIntroModal()" title="Narração de abertura que aparece para jogadores ao entrar">🎬 Abertura</button>
         <button class="stb-btn" onclick="openImageModal()" title="Inserir imagem no log para todos os jogadores">🖼 Imagem</button>
         <button class="stb-btn" onclick="saveLog()" title="Salvar log da sessão como arquivo de texto">💾 Salvar Log</button>
+        <button class="stb-btn" onclick="backupData()" title="Exportar backup completo (users, sheets, sessions, history)">📦 Backup</button>
+        <button class="stb-btn" onclick="document.getElementById('restore-inp').click()" title="Restaurar backup">📥 Restaurar</button>
+        <input type="file" id="restore-inp" accept=".json" style="display:none" onchange="restoreData(event)"/>
         <button class="stb-btn danger" onclick="clearLog()" title="Limpar mensagens do log (não apaga o histórico salvo)">🗑 Limpar</button>
       </div>
       <div id="log">
@@ -508,6 +511,45 @@ function sendImage() {
   pendingImageData = null;
 }
 
+// ── BACKUP / RESTORE ─────────────────────────────────────────────
+async function backupData() {
+  try {
+    const res = await fetch('/api/backup', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Erro ao buscar backup');
+    const data = await res.json();
+    const date = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `herois_backup_${date}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('📦 Backup exportado!');
+  } catch (e) { toast('Erro ao exportar: ' + e.message); }
+}
+
+async function restoreData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  e.target.value = '';
+  if (!confirm(`Restaurar backup de "${file.name}"?\n\nIsso vai SUBSTITUIR todos os dados atuais (usuários, fichas, histórico). Esta ação não pode ser desfeita.`)) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.users || !data.sheets || !data.sessions || !data.history)
+      throw new Error('Arquivo inválido — não parece ser um backup completo');
+    const res = await fetch('/api/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    toast('✅ Backup restaurado! Recarregando...');
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (e) { toast('Erro ao restaurar: ' + e.message); }
+}
+
 // ── LOG TOOLS — escopo global (chamadas por onclick) ─────────────
 function clearLog() {
   if (!confirm('Limpar o log para todos os jogadores?')) return;
@@ -581,6 +623,10 @@ let activeDifficulty = null;
 
 socket.on('connect', () => appendSystem('[ Conectado ]'));
 socket.on('disconnect', () => appendSystem('[ Desconectado — tentando reconectar... ]'));
+socket.on('server_restored', () => {
+  toast('📥 Dados restaurados pelo Mestre. Recarregando...');
+  setTimeout(() => window.location.reload(), 1500);
+});
 socket.on('connect_error', e => {
   // Token inválido ou expirado — redireciona para login
   if (e.message === 'Token inválido' || e.message === 'Token ausente') {
@@ -835,7 +881,6 @@ function renderPlayersTab() {
     card.innerHTML = `
       <!-- Botões de ação -->
       <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5" onclick="event.stopPropagation()">
-        <button class="btn btn-muted sm" onclick="exportSheet('${s.username}')" title="Exportar ficha como JSON">💾</button>
         <button class="btn btn-muted sm" onclick="openReplaceSheetModal('${s.username}')" title="Substituir ficha">🔄</button>
         <button class="btn btn-danger sm" onclick="removeSheet('${s.username}')" title="Remover ficha">✕</button>
       </div>
@@ -908,18 +953,6 @@ function openAddSheetModal(targetUsername = null) {
   document.getElementById('add-sheet-preview').style.display = 'none';
   document.getElementById('add-sheet-file').value = '';
   document.getElementById('add-sheet-modal').classList.add('open');
-}
-
-function exportSheet(username) {
-  const s = sheets[username];
-  if (!s) { toast('Ficha não encontrada'); return; }
-  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const filename = `ficha_${(s.name || username).replace(/\s+/g,'_')}.json`;
-  a.href = url; a.download = filename;
-  a.click(); URL.revokeObjectURL(url);
-  toast(`💾 Ficha de ${s.name || username} exportada`);
 }
 
 function openReplaceSheetModal(username) {
