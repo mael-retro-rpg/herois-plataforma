@@ -6,7 +6,7 @@
 <title>Heróis Improváveis — Login</title>
 <link rel="stylesheet" href="/css/shared.css">
 <style>
-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
 #login-wrap { width: 100%; max-width: 380px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 .logo { text-align: center; }
 .logo h1 { font-family: var(--font-d); font-size: 1.1rem; letter-spacing: 4px; color: var(--accent); }
@@ -18,6 +18,11 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 .error { font-family: var(--font-m); font-size: .68rem; color: var(--accent3); padding: 8px 10px; border: 1px solid var(--accent3); display: none; }
 .error.show { display: block; }
 #setup-note { font-family: var(--font-m); font-size: .65rem; color: var(--accent2); border: 1px solid var(--accent2); padding: 10px; line-height: 1.6; display: none; }
+/* Mobile */
+@media (max-width: 400px) {
+  .logo h1 { font-size: .85rem; letter-spacing: 2px; }
+  #login-wrap { padding: 12px; gap: 14px; }
+}
 </style>
 </head>
 <body>
