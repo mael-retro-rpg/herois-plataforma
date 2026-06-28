@@ -98,6 +98,30 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .img-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--accent2); margin-bottom: 2px; }
 .img-caption { font-size: .72rem; color: var(--muted); margin-top: 4px; font-style: italic; }
 
+/* AUDIO MESSAGE */
+.msg-audio { border-left: 2px solid var(--wp); padding-left: 10px; }
+.audio-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--wp); margin-bottom: 5px; }
+.audio-player { width: 100%; max-width: 340px; height: 32px; outline: none; accent-color: var(--wp); }
+.audio-caption { font-size: .68rem; color: var(--muted); margin-top: 3px; font-style: italic; }
+
+/* RECORDING INDICATOR */
+#rec-indicator {
+  display: none; align-items: center; gap: 8px;
+  font-family: var(--font-m); font-size: .68rem; color: var(--accent3);
+  padding: 4px 10px; border: 1px solid var(--accent3);
+  background: rgba(255,95,126,.06);
+}
+#rec-indicator.active { display: flex; }
+.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); animation: blink 1s infinite; flex-shrink: 0; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+#rec-timer { min-width: 36px; }
+.rec-stop-btn {
+  font-family: var(--font-d); font-size: .52rem; letter-spacing: 1px;
+  padding: 3px 8px; border: 1px solid var(--accent3); background: transparent;
+  color: var(--accent3); cursor: pointer; margin-left: auto;
+}
+.rec-stop-btn:hover { background: var(--accent3); color: #fff; }
+
 /* NARRATE INPUT */
 #narrate-area {
   border-top: 1px solid var(--border); background: var(--panel);
@@ -211,80 +235,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .new-user-form { background: var(--card); border: 1px solid var(--border2); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .new-user-form h3 { font-family: var(--font-d); font-size: .65rem; letter-spacing: 2px; color: var(--accent); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-/* ══ MOBILE ══ */
-@media (max-width: 700px) {
-  #header h1 { font-size: .65rem; letter-spacing: 2px; }
-  .header-right { gap: 4px; }
-  .header-right a, .header-right button { font-size: .46rem; padding: 4px 5px; }
-  #tabs { padding: 0 4px; }
-  .tab { font-size: .5rem; padding: 8px 8px; letter-spacing: 1px; }
-
-  /* Stack session vertically */
-  #tab-session { flex-direction: column; overflow-y: auto; }
-
-  /* HUD vira faixa horizontal */
-  #master-hud {
-    width: 100%; border-right: none; border-bottom: 1px solid var(--border);
-    display: flex; flex-direction: row; flex-wrap: wrap;
-    padding: 6px; gap: 6px; overflow-y: visible; max-height: none; flex-shrink: 0;
-  }
-  .mhud-sec { width: 100%; padding: 2px 4px; font-size: .44rem; }
-  #mhud-chars { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
-  .mhud-char { margin: 0; flex: 1; min-width: 130px; }
-  .mhud-online { border-top: none; border-left: 1px solid var(--border); padding: 4px 8px; min-width: 80px; margin-top: 0; }
-
-  /* Center área */
-  #master-center { min-height: 300px; flex: 1; }
-  #log { padding: 10px 12px; gap: 8px; }
-
-  /* Toolbar scrollável */
-  #session-toolbar { overflow-x: auto; padding: 5px 8px; gap: 4px; }
-  .stb-btn { font-size: .46rem; padding: 4px 7px; white-space: nowrap; }
-
-  /* Narrate area */
-  #narrate-area { padding: 6px 10px; }
-  .dice-row { gap: 4px; flex-wrap: wrap; }
-  .free-roll-btn, .toggle-dice-btn { font-size: .46rem; padding: 3px 6px; }
-
-  /* Chat vira painel flutuante */
-  #master-chat {
-    display: none !important;
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
-    width: 100%; border-left: none; border-top: 2px solid var(--accent2);
-    height: 260px; flex-direction: column;
-  }
-  #master-chat.mobile-open { display: flex !important; }
-
-  /* Botão flutuante */
-  #chat-toggle-btn {
-    display: flex !important;
-    position: fixed; bottom: 14px; right: 14px; z-index: 301;
-    width: 46px; height: 46px; border-radius: 50%;
-    background: var(--accent2); border: 2px solid rgba(255,255,255,.15);
-    cursor: pointer; align-items: center; justify-content: center;
-    font-size: 1.2rem; box-shadow: 0 3px 14px rgba(107,95,255,.5);
-    transition: transform .15s;
-  }
-  #chat-toggle-btn:active { transform: scale(.92); }
-
-  /* Abas fichas */
-  #tab-players { padding: 12px; }
-  .sheet-card { grid-template-columns: 110px 1fr; }
-  .sc-avatar { width: 110px; height: 110px; }
-  .sc-attrs { grid-template-columns: repeat(2,1fr); }
-  .sc-combat { grid-template-columns: repeat(2,1fr); }
-  .add-form-grid { grid-template-columns: 1fr 1fr 1fr; }
-
-  /* Aba usuários */
-  #tab-users { padding: 12px; }
-  .form-row { grid-template-columns: 1fr; }
-
-  /* Sheet popup coluna única */
-  #sheet-popup-box { grid-template-columns: 1fr; width: 96vw; }
-}
-@media (min-width: 701px) {
-  #chat-toggle-btn { display: none !important; }
-}
 </style>
 </head>
 <body>
@@ -375,6 +325,13 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
           <span class="dice-label">🎲 ROLAR:</span>
           <button class="free-roll-btn" onclick="rollFree()">2d6</button>
           <button class="toggle-dice-btn" id="toggle-dice-btn" onclick="toggleDicePanel()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:3px 8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">+ dados ▾</button>
+          <button class="free-roll-btn" onclick="startRecording()" id="rec-btn" style="border-color:var(--wp);color:var(--wp)" title="Gravar áudio">🎙 Gravar</button>
+        </div>
+        <div id="rec-indicator">
+          <div class="rec-dot"></div>
+          <span>Gravando</span>
+          <span id="rec-timer">0:00</span>
+          <button class="rec-stop-btn" onclick="stopRecording()">■ Parar</button>
         </div>
         <div class="narrate-row">
           <span style="font-family:var(--font-m);color:var(--accent);font-size:.9rem;flex-shrink:0">✦</span>
@@ -520,7 +477,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 </div>
 
 <div id="toast"></div>
-<button id="chat-toggle-btn" onclick="toggleMobileChat()" title="Abrir chat">💬</button>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -1091,6 +1047,56 @@ async function confirmAddSheet() {
   } catch(e) { toast('Erro: ' + e.message); }
 }
 
+// ── AUDIO RECORDING ──────────────────────────────────────────────
+let mediaRecorder = null;
+let audioChunks = [];
+let recTimerInterval = null;
+let recSeconds = 0;
+const MAX_REC_SECONDS = 40;
+
+async function startRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Pick best supported format
+    const mimeType = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']
+      .find(t => MediaRecorder.isTypeSupported(t)) || '';
+    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      if (blob.size > 3 * 1024 * 1024) { toast('Áudio muito longo — máximo ~60s'); return; }
+      const reader = new FileReader();
+      reader.onload = ev => socket.emit('audio', { src: ev.target.result });
+      reader.readAsDataURL(blob);
+    };
+    mediaRecorder.start(200);
+    // UI
+    document.getElementById('rec-indicator').classList.add('active');
+    document.getElementById('rec-btn').style.opacity = '.4';
+    recSeconds = 0;
+    recTimerInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds/60), s = recSeconds%60;
+      document.getElementById('rec-timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      if (recSeconds >= MAX_REC_SECONDS) stopRecording();
+    }, 1000);
+  } catch(e) {
+    toast('Microfone não disponível: ' + e.message);
+  }
+}
+
+function stopRecording() {
+  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+  mediaRecorder.stop();
+  clearInterval(recTimerInterval);
+  document.getElementById('rec-indicator').classList.remove('active');
+  document.getElementById('rec-btn').style.opacity = '1';
+  document.getElementById('rec-timer').textContent = '0:00';
+}
+
 // ── NARRATIVE ─────────────────────────────────────────────────────
 function sendNarrate() {
   const inp = document.getElementById('narrate-inp');
@@ -1226,6 +1232,12 @@ function renderMessage(msg) {
       <div class="img-author">🖼 ${msg.author}</div>
       <img src="${msg.src}" alt="${msg.caption||'imagem'}" style="max-width:100%;max-height:400px;object-fit:contain;border:1px solid var(--border2);display:block;margin-top:6px"/>
       ${msg.caption ? `<div class="img-caption">${msg.caption}</div>` : ''}`;
+  } else if (msg.type === 'audio') {
+    el.className = 'msg-audio';
+    el.innerHTML = `
+      <div class="audio-author">🎙 ${msg.author}</div>
+      <audio class="audio-player" controls preload="none" src="${msg.src}"></audio>
+      ${msg.caption ? `<div class="audio-caption">${msg.caption}</div>` : ''}`;
   }
   if (el.innerHTML || el.textContent) { log.appendChild(el); scrollLog(); }
 }
@@ -1378,13 +1390,6 @@ async function changePassword() {
 }
 
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
-
-function toggleMobileChat() {
-  const chat = document.getElementById('master-chat');
-  const btn  = document.getElementById('chat-toggle-btn');
-  const open = chat.classList.toggle('mobile-open');
-  btn.textContent = open ? '✕' : '💬';
-}
 </script>
 </body>
 </html>

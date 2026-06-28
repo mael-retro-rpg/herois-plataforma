@@ -436,6 +436,23 @@ io.on('connection', (socket) => {
     emitUsersStatus();
   });
 
+  // ── AUDIO ──
+  socket.on('audio', (data) => {
+    if (!data.src) return;
+    if (typeof data.src === 'string' && data.src.length > 4 * 1024 * 1024) {
+      socket.emit('message', { type: 'system', content: '[ Áudio muito grande — grave menos de 60 segundos ]' });
+      return;
+    }
+    const msg = {
+      id: uuidv4(), type: 'audio',
+      author: getAuthorLabel(user.username, user.displayName),
+      username: user.username,
+      src: data.src,
+      timestamp: new Date().toISOString()
+    };
+    saveAndBroadcast(msg);
+  });
+
   // ── IMAGE (master only) ──
   socket.on('image', (data) => {
     if (user.role !== 'master') return;
