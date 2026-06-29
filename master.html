@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heróis Improváveis — Mestre</title>
+<link rel="stylesheet" href="/css/shared.css">
+<style>
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* HEADER */
+#header {
+  background: var(--panel); border-bottom: 1px solid var(--border);
+  padding: 6px 14px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+#header h1 { font-family: var(--font-d); font-size: .75rem; letter-spacing: 3px; color: var(--accent); }
+.master-tag { font-family: var(--font-d); font-size: .5rem; color: var(--accent); border: 1px solid var(--accent); padding: 2px 6px; letter-spacing: 1px; margin-left: 8px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+/* TABS */
+#tabs { background: var(--panel); border-bottom: 1px solid var(--border); display: flex; gap: 0; flex-shrink: 0; }
+.tab { font-family: var(--font-d); font-size: .58rem; letter-spacing: 1px; padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); transition: .2s; text-transform: uppercase; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* MAIN */
+#main { flex: 1; display: flex; overflow: hidden; }
+
+/* ── SESSION TAB ── */
+#tab-session { flex: 1; display: flex; overflow: hidden; }
+
+/* HUD master */
+#master-hud {
+  width: 200px; flex-shrink: 0; background: var(--panel);
+  border-right: 1px solid var(--border); overflow-y: auto; padding: 0 0 10px;
+}
+.mhud-sec { font-family: var(--font-d); font-size: .48rem; letter-spacing: 2px; color: var(--muted); padding: 8px 8px 4px; text-transform: uppercase; }
+.mhud-char { margin: 0 6px 6px; background: var(--card); border: 1px solid var(--border2); padding: 8px; }
+.mhud-char-name { font-family: var(--font-d); font-size: .65rem; letter-spacing: 1px; color: var(--accent); margin-bottom: 3px; }
+.mhud-char-sub { font-size: .54rem; color: var(--muted); margin-bottom: 5px; }
+.mhud-bar { margin-bottom: 3px; }
+.mhud-bar-top { display: flex; justify-content: space-between; font-family: var(--font-d); font-size: .5rem; color: var(--muted); margin-bottom: 2px; }
+.mhud-bar-top b { color: var(--text); font-weight: 400; }
+.mhud-track { height: 4px; background: var(--border); overflow: hidden; }
+.mhud-fill { height: 100%; transition: width .3s; }
+.mhud-fill.hp { background: var(--hp); }
+.mhud-fill.wp { background: var(--wp); }
+.mhud-edit { display: flex; gap: 4px; align-items: center; margin-top: 4px; }
+.mhud-inp {
+  width: 36px; background: transparent; border: none; border-bottom: 1px solid var(--border2);
+  outline: none; font-family: var(--font-m); font-size: .72rem; text-align: center; color: var(--hp); caret-color: var(--accent);
+}
+.mhud-inp.wp { color: var(--wp); }
+.mhud-attrs { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+.mhud-attr { font-family: var(--font-m); font-size: .55rem; padding: 1px 4px; border: 1px solid var(--border2); color: var(--muted); }
+.mhud-attr b { color: var(--text); }
+.mhud-online { padding: 6px 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+.online-item { font-family: var(--font-m); font-size: .58rem; color: var(--muted); padding: 2px 0; display: flex; align-items: center; gap: 5px; }
+.online-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--hp); }
+.online-item.offline { opacity: .55; }
+.online-item.offline .dot { background: var(--border2); }
+.online-item.master .dot { background: var(--accent); }
+
+/* CENTER */
+#master-center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Session toolbar */
+#session-toolbar {
+  display: flex; gap: 6px; padding: 6px 12px;
+  border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0;
+}
+.stb-btn {
+  font-family: var(--font-d); font-size: .52rem; letter-spacing: 1px;
+  padding: 5px 10px; border: 1px solid var(--border2); background: transparent;
+  color: var(--muted); cursor: pointer; transition: .2s; text-transform: uppercase;
+}
+.stb-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.stb-btn.danger:hover { border-color: var(--accent3); color: var(--accent3); }
+.stb-btn.active { border-color: var(--accent); color: var(--accent); }
+#log {
+  flex: 1; overflow-y: auto; padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
+}
+.msg-narrate { font-size: .88rem; color: var(--text); line-height: 1.75; }
+.msg-narrate p { margin-bottom: 5px; }
+.msg-action { font-family: var(--font-m); font-size: .78rem; color: var(--accent2); border-left: 2px solid var(--accent2); padding-left: 10px; }
+.msg-action .act-author { font-size: .6rem; color: var(--muted); margin-bottom: 2px; }
+.msg-roll { background: rgba(200,240,58,.04); border: 1px solid var(--border2); padding: 8px 12px; font-family: var(--font-m); font-size: .75rem; }
+.msg-roll .roll-author { font-size: .58rem; color: var(--muted); margin-bottom: 3px; }
+.msg-roll .roll-dice { color: var(--accent); }
+.msg-roll .roll-total { font-family: var(--font-d); font-size: 1rem; color: var(--text); }
+.msg-roll.critical { border-color: var(--accent); background: rgba(200,240,58,.08); }
+.msg-roll.fumble   { border-color: var(--accent3); background: rgba(255,95,126,.08); }
+.msg-roll .roll-tag { font-size: .6rem; letter-spacing: 1px; padding: 1px 5px; border: 1px solid; margin-left: 6px; font-family: var(--font-d); }
+.msg-roll.critical .roll-tag { color: var(--accent); border-color: var(--accent); }
+.msg-roll.fumble   .roll-tag { color: var(--accent3); border-color: var(--accent3); }
+.msg-system { font-family: var(--font-m); font-size: .68rem; color: var(--muted); border-left: 2px solid var(--border2); padding-left: 8px; }
+.msg-image { border-left: 2px solid var(--accent2); padding-left: 10px; }
+.img-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--accent2); margin-bottom: 2px; }
+.img-caption { font-size: .72rem; color: var(--muted); margin-top: 4px; font-style: italic; }
+
+/* NARRATE INPUT */
+#narrate-area {
+  border-top: 1px solid var(--border); background: var(--panel);
+  padding: 8px 14px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+}
+.narrate-row { display: flex; gap: 8px; align-items: flex-end; }
+#narrate-inp {
+  flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border2);
+  outline: none; color: var(--text); font-family: var(--font-b); font-size: .85rem;
+  caret-color: var(--accent); resize: none; min-height: 28px; max-height: 120px;
+  overflow-y: auto; line-height: 1.6; padding: 2px 0;
+}
+#narrate-inp::placeholder { color: var(--border2); }
+.dice-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.dice-label { font-family: var(--font-d); font-size: .5rem; letter-spacing: 1px; color: var(--muted); }
+.free-roll-btn { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; padding: 4px 8px; border: 1px solid var(--border2); background: transparent; color: var(--accent2); cursor: pointer; transition: .2s; }
+.free-roll-btn:hover { background: var(--accent2); color: #fff; }
+
+/* CHAT */
+#master-chat { width: 220px; flex-shrink: 0; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+#chat-header { font-family: var(--font-d); font-size: .55rem; letter-spacing: 2px; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+#chat-log { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.chat-msg .chat-author { font-family: var(--font-d); font-size: .5rem; color: var(--accent2); margin-bottom: 1px; }
+.chat-msg .chat-author.master { color: var(--accent); }
+.chat-msg .chat-text { font-size: .72rem; color: var(--text); line-height: 1.5; }
+#chat-input-row { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--border); }
+#chat-inp { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border2); outline: none; font-size: .75rem; color: var(--text); caret-color: var(--accent); }
+#chat-inp::placeholder { color: var(--border2); }
+#chat-send { font-family: var(--font-d); font-size: .5rem; letter-spacing: 1px; padding: 4px 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+#chat-send:hover { background: var(--accent); color: var(--bg); }
+
+/* ── PLAYERS TAB ── */
+#tab-players { flex: 1; overflow-y: auto; padding: 20px 24px; display: none; flex-direction: column; gap: 20px; }
+
+/* Sheet card — padrão ficha real */
+.sheet-card {
+  background: var(--panel); border: 1px solid var(--border2);
+  display: grid; grid-template-columns: 160px 1fr; cursor: pointer; transition: border-color .2s;
+}
+.sheet-card:hover { border-color: var(--accent2); }
+
+.sc-left {
+  border-right: 1px solid var(--border2); display: flex; flex-direction: column;
+}
+.sc-avatar {
+  width: 160px; height: 160px; object-fit: cover; object-position: top;
+  background: var(--card); display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; flex-shrink: 0; border-bottom: 1px solid var(--border2);
+}
+.sc-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.sc-identity { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.sc-name { font-family: var(--font-d); font-size: .85rem; letter-spacing: 2px; color: var(--accent); margin-bottom: 2px; }
+.sc-cls  { font-size: .65rem; color: var(--accent2); letter-spacing: 1px; margin-bottom: 2px; }
+.sc-type { font-size: .6rem; color: var(--muted); }
+.sc-vit-von { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.sc-bar-label { display: flex; justify-content: space-between; font-family: var(--font-d); font-size: .52rem; color: var(--muted); margin-bottom: 2px; }
+.sc-bar-label b { color: var(--text); font-weight: 400; }
+.sc-track { height: 6px; background: var(--border); overflow: hidden; }
+.sc-fill { height: 100%; }
+.sc-fill.hp { background: var(--hp); }
+.sc-fill.wp { background: var(--wp); }
+
+.sc-right { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.sc-section { font-family: var(--font-d); font-size: .48rem; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+
+/* Attribute hex-style blocks */
+.sc-attrs { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+.sc-attr-block { background: var(--card); border: 1px solid var(--border2); padding: 6px; text-align: center; }
+.sc-attr-block.atq { border-color: rgba(255,95,126,.3); }
+.sc-attr-block.res { border-color: rgba(58,255,200,.3); }
+.sc-attr-block.sab { border-color: rgba(200,123,255,.3); }
+.sc-attr-block.agi { border-color: rgba(107,95,255,.3); }
+.sc-attr-name { font-size: .48rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.sc-attr-val  { font-family: var(--font-d); font-size: 1.1rem; color: var(--accent); }
+
+/* Combat stats */
+.sc-combat { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.sc-combat-stat { background: var(--card); border: 1px solid var(--border); padding: 5px 8px; }
+.sc-combat-label { font-size: .48rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.sc-combat-val   { font-family: var(--font-d); font-size: .85rem; color: var(--text); margin-top: 1px; }
+
+/* Powers */
+.sc-powers { display: flex; flex-direction: column; gap: 4px; }
+.sc-power { font-size: .7rem; color: var(--wp); line-height: 1.5; }
+.sc-power::before { content: '◆ '; color: var(--border2); }
+
+/* HUD — compact, no attrs */
+.mhud-char { margin: 0 6px 6px; background: var(--card); border: 1px solid var(--border2); padding: 8px; cursor: pointer; transition: border-color .2s; }
+.mhud-char:hover { border-color: var(--accent2); }
+
+/* POPUP */
+#sheet-popup { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:500; align-items:center; justify-content:center; }
+#sheet-popup.open { display:flex; }
+#sheet-popup-box {
+  background: var(--panel); border: 1px solid var(--border2);
+  width: 520px; max-height: 88vh; overflow-y: auto; position: relative;
+  display: grid; grid-template-columns: 160px 1fr;
+}
+#sheet-popup-close {
+  position: absolute; top: 10px; right: 12px; background: none; border: none;
+  color: var(--muted); cursor: pointer; font-size: 1rem; z-index: 10;
+}
+#sheet-popup-close:hover { color: var(--accent3); }
+#sheet-popup-content { display: contents; }
+
+/* ── USERS TAB ── */
+#tab-users { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 16px; }
+.user-row { background: var(--card); border: 1px solid var(--border2); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+.user-display { font-family: var(--font-d); font-size: .72rem; color: var(--accent); flex: 1; }
+.user-role { font-family: var(--font-m); font-size: .62rem; color: var(--muted); }
+.new-user-form { background: var(--card); border: 1px solid var(--border2); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.new-user-form h3 { font-family: var(--font-d); font-size: .65rem; letter-spacing: 2px; color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div style="display:flex;align-items:center">
+    <div><h1>⚡ Heróis Improváveis</h1><div id="room-label" style="font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:2px">—</div></div>
+    <span class="master-tag">MESTRE</span>
+  </div>
+  <div class="header-right">
+    <a href="/lobby.html" class="btn btn-muted sm">🏠 Lobby</a>
+    <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
+    <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
+    <span style="font-family:var(--font-m);font-size:.68rem;color:var(--muted)" id="user-label">—</span>
+    <button class="btn btn-muted sm" onclick="openChangePasswordModal()">🔑 Senha</button>
+    <button class="btn btn-danger sm" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<div id="tabs">
+  <div class="tab active" onclick="showTab('session')">🎮 Sessão</div>
+  <div class="tab" onclick="showTab('players')">📄 Fichas</div>
+  <div class="tab" onclick="showTab('users')">👥 Jogadores</div>
+</div>
+
+<div id="main">
+
+  <!-- SESSION TAB -->
+  <div id="tab-session">
+    <!-- HUD -->
+    <div id="master-hud">
+      <div class="mhud-sec">Fichas da Party</div>
+      <div id="mhud-chars"></div>
+      <div class="mhud-online">
+        <div class="mhud-sec" style="padding:0 0 4px">Online</div>
+        <div id="online-users"></div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div id="master-center">
+      <div id="session-toolbar">
+        <button class="stb-btn" onclick="openIntroModal()" title="Narração de abertura que aparece para jogadores ao entrar">🎬 Abertura</button>
+        <button class="stb-btn" onclick="openImageModal()" title="Inserir imagem no log para todos os jogadores">🖼 Imagem</button>
+        <button class="stb-btn" onclick="saveLog()" title="Salvar log da sessão como arquivo de texto">💾 Salvar Log</button>
+        <button class="stb-btn" onclick="backupData()" title="Exportar backup completo (users, sheets, sessions, history)">📦 Backup</button>
+        <button class="stb-btn" onclick="document.getElementById('restore-inp').click()" title="Restaurar backup">📥 Restaurar</button>
+        <input type="file" id="restore-inp" accept=".json" style="display:none" onchange="restoreData(event)"/>
+        <button class="stb-btn danger" onclick="clearLog()" title="Limpar mensagens do log (não apaga o histórico salvo)">🗑 Limpar</button>
+      </div>
+      <div id="log">
+        <div class="msg-system">[ Aguardando conexão dos jogadores... ]</div>
+      </div>
+      <div id="narrate-area">
+        <div id="dice-expanded" style="display:none;flex-direction:column;gap:6px;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px">
+          <!-- Custom dice row -->
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);width:60px">🎲 CUSTOM</span>
+            <input id="dice-qty"   type="number" min="1" max="20"   value="2" style="width:44px;background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.8rem;text-align:center;padding:3px 4px;outline:none" title="Quantidade"/>
+            <span style="color:var(--muted);font-size:.7rem">d</span>
+            <input id="dice-faces" type="number" min="2" max="1000" value="6" style="width:44px;background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.8rem;text-align:center;padding:3px 4px;outline:none" title="Faces"/>
+            <span style="color:var(--muted);font-size:.7rem">+</span>
+            <input id="dice-bonus" type="number" value="0" style="width:44px;background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.8rem;text-align:center;padding:3px 4px;outline:none" title="Bônus/Penalidade"/>
+            <button onclick="rollCustomMaster()" style="font-family:var(--font-d);font-size:.55rem;letter-spacing:1px;padding:4px 10px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">ROLAR</button>
+          </div>
+          <!-- Difficulty row -->
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);width:60px">🎯 TESTE</span>
+            <input id="diff-label" type="text" placeholder="Nome do teste" style="flex:1;min-width:100px;background:var(--card);border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);font-size:.75rem;padding:3px 6px;outline:none"/>
+            <select id="diff-value" style="background:var(--card);border:1px solid var(--border2);color:var(--accent);font-family:var(--font-m);font-size:.75rem;padding:3px 6px;outline:none">
+              <option value="">— dificuldade —</option>
+              <option value="6">6 — Fácil</option>
+              <option value="8">8 — Médio</option>
+              <option value="10">10 — Difícil</option>
+              <option value="12">12 — Desafiador</option>
+              <option value="14">14 — Formidável</option>
+              <option value="16">16 — Heroico</option>
+              <option value="18">18 — Lendário</option>
+              <option value="20">20 — Quase Impossível</option>
+              <option value="22">22 — Praticamente Impossível</option>
+            </select>
+            <button onclick="setDifficulty()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:4px 8px;border:1px solid var(--accent2);background:transparent;color:var(--accent2);cursor:pointer">DEFINIR</button>
+            <button onclick="clearDifficulty()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:4px 8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">✕</button>
+          </div>
+          <!-- Active difficulty display -->
+          <div id="active-diff" style="display:none;font-family:var(--font-m);font-size:.62rem;color:var(--accent);padding:4px 8px;background:rgba(200,240,58,.06);border:1px solid var(--accent)"></div>
+        </div>
+        <div class="dice-row">
+          <span class="dice-label">🎲 ROLAR:</span>
+          <button class="free-roll-btn" onclick="rollFree()">2d6</button>
+          <button class="toggle-dice-btn" id="toggle-dice-btn" onclick="toggleDicePanel()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:3px 8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">+ dados ▾</button>
+        </div>
+        <div class="narrate-row">
+          <span style="font-family:var(--font-m);color:var(--accent);font-size:.9rem;flex-shrink:0">✦</span>
+          <textarea id="narrate-inp" placeholder="Narre a cena..." rows="1"></textarea>
+          <button class="btn btn-accent" onclick="sendNarrate()" style="flex-shrink:0">NARRAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="master-chat">
+      <div id="chat-header">💬 Chat da Party</div>
+      <div id="chat-log"></div>
+      <div id="chat-input-row">
+        <input id="chat-inp" type="text" placeholder="Mensagem..."/>
+        <button id="chat-send" onclick="sendChat()">▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYERS TAB -->
+  <div id="tab-players"></div>
+
+  <!-- USERS TAB -->
+  <div id="tab-users">
+    <div class="new-user-form">
+      <h3>➕ Adicionar Jogador</h3>
+      <div class="form-row">
+        <div class="field"><label>Nome de exibição</label><input class="inp" id="nu-display" type="text" placeholder="Jogador 1"/></div>
+        <div class="field"><label>Usuário</label><input class="inp" id="nu-user" type="text" placeholder="jogador1"/></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Senha</label><input class="inp" id="nu-pass" type="password" value="12345" placeholder="12345"/></div>
+        <div class="field"><label>Função</label>
+          <select class="inp" id="nu-role">
+            <option value="player">Jogador</option>
+            <option value="master">Mestre</option>
+          </select>
+        </div>
+      </div>
+      <div class="error" id="nu-err" style="display:none;font-family:var(--font-m);font-size:.68rem;color:var(--accent3);padding:6px;border:1px solid var(--accent3)"></div>
+      <button class="btn btn-accent" onclick="createUser()">✓ Criar Usuário</button>
+    </div>
+    <div id="user-list"></div>
+  </div>
+</div>
+
+<!-- SHEET POPUP -->
+<div id="sheet-popup" onclick="closeSheetPopup(event)">
+  <div id="sheet-popup-box">
+    <button id="sheet-popup-close" onclick="closeSheetPopupForce()">✕</button>
+    <div id="sheet-popup-content"></div>
+  </div>
+</div>
+
+<!-- ADD/REPLACE SHEET MODAL -->
+<div class="modal-overlay" id="add-sheet-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">📄 Gerenciar Ficha</div>
+      <button class="modal-close" onclick="document.getElementById('add-sheet-modal').classList.remove('open')">✕</button>
+    </div>
+    <div id="add-sheet-modal-body"></div>
+    <button class="btn btn-accent full" onclick="document.getElementById('add-sheet-file').click()">📂 Carregar JSON da Ficha</button>
+    <input type="file" id="add-sheet-file" accept=".json" style="display:none" onchange="handleAddSheetFile(event)"/>
+    <div id="add-sheet-preview" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-family:var(--font-d);font-size:.58rem;color:var(--accent);letter-spacing:1px">PRÉVIA</div>
+      <div class="preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8;background:var(--card);padding:8px"></div>
+      <button class="btn btn-accent full" onclick="confirmAddSheet()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE MODAL (mestre insere imagem no log) -->
+<div class="modal-overlay" id="image-modal">
+  <div class="modal-box" style="width:460px;max-width:95vw">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🖼 Inserir Imagem</div>
+      <button class="modal-close" onclick="document.getElementById('image-modal').classList.remove('open')">✕</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
+      A imagem será exibida no log de <strong style="color:var(--accent)">todos os jogadores</strong> em tempo real.
+    </p>
+    <!-- Upload file -->
+    <button class="btn btn-accent full" onclick="document.getElementById('img-file-inp').click()">📂 Carregar do computador</button>
+    <input type="file" id="img-file-inp" accept="image/*" style="display:none" onchange="handleImageFile(event)"/>
+    <!-- URL -->
+    <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+      <input class="inp" id="img-url-inp" type="text" placeholder="Ou cole uma URL de imagem..." style="flex:1;font-size:.75rem"/>
+      <button class="btn btn-accent2" onclick="handleImageUrl()" style="flex-shrink:0">Usar URL</button>
+    </div>
+    <!-- Preview -->
+    <div id="img-preview-wrap" style="display:none;text-align:center;margin-top:4px">
+      <img id="img-preview" src="" alt="prévia" style="max-width:100%;max-height:200px;border:1px solid var(--border2);object-fit:contain"/>
+      <div style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);margin-top:4px" id="img-preview-label"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <input class="inp" id="img-caption" type="text" placeholder="Legenda (opcional)" style="flex:1;font-size:.75rem"/>
+      <button class="btn btn-accent" onclick="sendImage()" id="img-send-btn" disabled style="flex-shrink:0">▶ Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO ADVENTURE MODAL (mestre define) -->
+<div class="modal-overlay" id="intro-modal">
+  <div class="modal-box" style="width:500px;max-width:95vw">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🎬 Narração de Abertura</div>
+      <button class="modal-close" onclick="document.getElementById('intro-modal').classList.remove('open')">✕</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
+      Este texto aparece como <strong style="color:var(--accent)">popup</strong> para cada jogador assim que entrar na sessão. Use para apresentar o cenário, as regras da sessão ou qualquer abertura narrativa.
+    </p>
+    <div class="field">
+      <label>Texto de abertura</label>
+      <textarea class="inp" id="intro-text" rows="8" placeholder="Era uma vez... Digite aqui a narração inicial da aventura. Suporta **markdown**." style="resize:vertical;min-height:140px;font-size:.8rem;line-height:1.6"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-accent full" onclick="saveIntro()">💾 Salvar Abertura</button>
+      <button class="btn btn-danger" onclick="clearIntro()" title="Remover abertura — jogadores não verão mais o popup">✕ Remover</button>
+    </div>
+    <div id="intro-status" style="font-family:var(--font-m);font-size:.62rem;color:var(--muted)"></div>
+  </div>
+</div>
+
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="change-password-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🔑 Alterar Senha</div>
+      <button class="modal-close" onclick="closeModal('change-password-modal')">✕</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
+      Altere sua senha de acesso. A senha inicial padrão para novos usuários é <strong style="color:var(--accent)">12345</strong>.
+    </p>
+    <div class="field"><label>Senha atual</label><input class="inp" id="cp-old" type="password" autocomplete="current-password" placeholder="Senha atual"/></div>
+    <div class="field"><label>Nova senha</label><input class="inp" id="cp-new" type="password" autocomplete="new-password" placeholder="Nova senha"/></div>
+    <div class="field"><label>Confirmar nova senha</label><input class="inp" id="cp-confirm" type="password" autocomplete="new-password" placeholder="Repita a nova senha"/></div>
+    <div class="error" id="cp-err" style="display:none;font-family:var(--font-m);font-size:.68rem;color:var(--accent3);padding:6px;border:1px solid var(--accent3)"></div>
+    <button class="btn btn-accent full" onclick="changePassword()">✓ Salvar nova senha</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ── AUTH ──────────────────────────────────────────────────────────
+const token = localStorage.getItem('hi_token');
+const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
+const roomId = localStorage.getItem('hi_room') || 'herois';
+const roomName = localStorage.getItem('hi_room_name') || 'Heróis Improváveis';
+
+function logout() {
+  localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
+  localStorage.removeItem('hi_room'); localStorage.removeItem('hi_room_name');
+  window.location.href = '/';
+}
+
+if (!token || !me || me.role !== 'master') {
+  window.location.href = '/';
+} else {
+  document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
+  document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
+  document.title = roomName + ' — Mestre';
+}
+
+// ── IMAGE TOOLS ───────────────────────────────────────────────────
+let pendingImageData = null;
+
+function openImageModal() {
+  pendingImageData = null;
+  document.getElementById('img-preview-wrap').style.display = 'none';
+  document.getElementById('img-preview').src = '';
+  document.getElementById('img-url-inp').value = '';
+  document.getElementById('img-caption').value = '';
+  document.getElementById('img-send-btn').disabled = true;
+  document.getElementById('img-file-inp').value = '';
+  document.getElementById('image-modal').classList.add('open');
+}
+
+function handleImageFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pendingImageData = ev.target.result; // base64
+    showImagePreview(pendingImageData, file.name);
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleImageUrl() {
+  const url = document.getElementById('img-url-inp').value.trim();
+  if (!url) return;
+  pendingImageData = url;
+  showImagePreview(url, url);
+}
+
+function showImagePreview(src, label) {
+  const img = document.getElementById('img-preview');
+  img.src = src;
+  document.getElementById('img-preview-label').textContent = label.length > 50 ? label.slice(0,50)+'…' : label;
+  document.getElementById('img-preview-wrap').style.display = '';
+  document.getElementById('img-send-btn').disabled = false;
+}
+
+function sendImage() {
+  if (!pendingImageData) return;
+  const caption = document.getElementById('img-caption').value.trim();
+  socket.emit('image', { src: pendingImageData, caption });
+  document.getElementById('image-modal').classList.remove('open');
+  pendingImageData = null;
+}
+
+// ── BACKUP / RESTORE ─────────────────────────────────────────────
+async function backupData() {
+  try {
+    const res = await fetch('/api/backup', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Erro ao buscar backup');
+    const data = await res.json();
+    const date = new Date().toISOString().slice(0,10);
+    const blob = new Blob([JSON.stringify(data,null,2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `herois_backup_${date}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('📦 Backup exportado!');
+  } catch(e) { toast('Erro ao exportar: ' + e.message); }
+}
+
+async function restoreData(e) {
+  const file = e.target.files[0]; if(!file) return;
+  e.target.value = '';
+  if(!confirm(`Restaurar backup de "${file.name}"?\n\nIsso vai SUBSTITUIR todos os dados atuais. Esta ação não pode ser desfeita.`)) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!data.users || !data.sheets || !data.sessions || !data.history)
+      throw new Error('Arquivo inválido — não parece ser um backup completo');
+    const res = await fetch('/api/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if(!res.ok) throw new Error(result.error);
+    toast('✅ Backup restaurado! Recarregando...');
+    setTimeout(() => window.location.reload(), 1500);
+  } catch(e) { toast('Erro ao restaurar: ' + e.message); }
+}
+
+// ── LOG TOOLS — escopo global (chamadas por onclick) ─────────────
+function clearLog() {
+  if (!confirm('Limpar o log para todos os jogadores?')) return;
+  socket.emit('clear_log');
+}
+
+function saveLog() {
+  const msgs = document.querySelectorAll('#log > *');
+  const lines = [];
+  const now = new Date().toLocaleString('pt-BR');
+  lines.push(`=== LOG DA SESSÃO — ${now} ===\n`);
+  msgs.forEach(el => {
+    const text = el.innerText || el.textContent;
+    if (text.trim()) lines.push(text.trim());
+  });
+  const blob = new Blob([lines.join('\n\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sessao_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 Log salvo!');
+}
+
+function openIntroModal() {
+  fetch('/api/rooms/' + roomId + '/session', { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(s => {
+      document.getElementById('intro-text').value = s.intro || '';
+      document.getElementById('intro-status').textContent = s.intro
+        ? '✅ Abertura ativa — jogadores verão ao entrar'
+        : 'Nenhuma abertura definida';
+    }).catch(() => {});
+  document.getElementById('intro-modal').classList.add('open');
+}
+
+async function saveIntro() {
+  const text = document.getElementById('intro-text').value.trim();
+  if (!text) { toast('Digite o texto de abertura'); return; }
+  try {
+    const res = await fetch('/api/rooms/' + roomId + '/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ intro: text })
+    });
+    if (!res.ok) throw new Error();
+    document.getElementById('intro-status').textContent = '✅ Abertura ativa — jogadores verão ao entrar';
+    toast('✅ Abertura salva!');
+  } catch { toast('Erro ao salvar'); }
+}
+
+async function clearIntro() {
+  if (!confirm('Remover a narração de abertura?')) return;
+  try {
+    await fetch('/api/rooms/' + roomId + '/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ intro: '' })
+    });
+    document.getElementById('intro-text').value = '';
+    document.getElementById('intro-status').textContent = 'Nenhuma abertura definida';
+    toast('Abertura removida');
+  } catch { toast('Erro'); }
+}
+
+// ── SOCKET ───────────────────────────────────────────────────────
+const socket = io({ auth: { token, roomId } });
+let sheets = {};
+let activeDifficulty = null;
+
+socket.on('connect', () => appendSystem('[ Conectado ]'));
+socket.on('disconnect', () => appendSystem('[ Desconectado — tentando reconectar... ]'));
+socket.on('server_restored', () => {
+  toast('📥 Dados restaurados. Recarregando...');
+  setTimeout(() => window.location.reload(), 1500);
+});
+socket.on('connect_error', e => {
+  // Token inválido ou expirado — redireciona para login
+  if (e.message === 'Token inválido' || e.message === 'Token ausente') {
+    localStorage.removeItem('hi_token');
+    localStorage.removeItem('hi_user');
+    window.location.href = '/';
+  } else {
+    appendSystem(`[ Erro de conexão: ${e.message} ]`);
+  }
+});
+
+socket.on('history_load', msgs => {
+  document.getElementById('log').innerHTML = '';
+  msgs.forEach(renderMessage);
+  scrollLog();
+});
+
+socket.on('sheets_load', list => {
+  list.forEach(s => { sheets[s.username] = s; });
+  renderHUD(); renderPlayersTab();
+});
+
+socket.on('sheet_updated', ({ username, sheet }) => {
+  sheets[username] = sheet;
+  renderHUD(); renderPlayersTab();
+});
+
+socket.on('sheet_removed', ({ username }) => {
+  delete sheets[username];
+  renderHUD(); renderPlayersTab();
+});
+
+socket.on('message', msg => {
+  if (msg.type === 'chat') { renderChat(msg); return; }
+  renderMessage(msg); scrollLog();
+});
+
+socket.on('users_online', list => {
+  const el = document.getElementById('online-users');
+  el.innerHTML = list.map(u => `<div class="online-item ${u.role==='master'?'master':''}"><div class="dot"></div>${u.displayName}${u.role==='master'?' ✦':''}</div>`).join('');
+});
+
+socket.on('users_status', list => renderUserStatusList(list));
+
+socket.on('difficulty_set', data => applyDifficultyState(data));
+
+socket.on('log_cleared', data => {
+  document.getElementById('log').innerHTML = `<div class="msg-system">[ Log limpo por ${data?.by || 'Mestre'} ]</div>`;
+});
+
+// ── SHARED SHEET BUILDER ─────────────────────────────────────────
+const CLS_EMOJI = {'Guerreiro':'⚔️','Cavaleiro':'🛡️','Mago':'✨','Clérigo':'✝️','Caçador':'🏹','Ladino':'🗡️'};
+
+function calcDerived(s){
+  const atq=parseInt(s.atq)||0, res=parseInt(s.res)||0, sab=parseInt(s.sab)||0, agi=parseInt(s.agi)||0;
+  // Try to get equipment bonuses from sheet eq1/eq2 fields if stored
+  return {
+    ini: 2+agi, jAtq: atq, def: 4+res, rmag: 4+sab,
+    vit: 10+Math.floor(res/2), vontade: 10+Math.floor(sab/2)
+  };
+}
+
+
+function firstSheetValue(s, keys, fallback = '—') {
+  for (const key of keys) {
+    const value = s?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+  }
+  return fallback;
+}
+
+function formatBonus(value) {
+  if (value === undefined || value === null || String(value).trim() === '' || value === '—') return '—';
+  const str = String(value).trim();
+  const num = Number(str);
+  if (!Number.isNaN(num)) return num > 0 ? `+${num}` : `${num}`;
+  return /^[+-]/.test(str) ? str : str;
+}
+
+function getDamageValues(s) {
+  return {
+    fis: formatBonus(firstSheetValue(s, [
+      'danoFisico','danoFis','danoFisicoBonus','danoFisBonus','bonusDanoFisico','bonusDanoFis',
+      'dano_fisico','dano_fis','bonus_dano_fisico','bonus_dano_fis','bdFisico','bdFis',
+      'dmgFis','dmgPhys','physicalDamage','damagePhysical','physDamage','danoFísico','bonusDanoFísico'
+    ])),
+    mag: formatBonus(firstSheetValue(s, [
+      'danoMagico','danoMag','danoMagicoBonus','danoMagBonus','bonusDanoMagico','bonusDanoMag',
+      'dano_magico','dano_mag','bonus_dano_magico','bonus_dano_mag','bdMagico','bdMag',
+      'dmgMag','dmgMagic','magicDamage','damageMagic','magDamage','danoMágico','bonusDanoMágico'
+    ]))
+  };
+}
+
+function buildSheetPopupHTML(s){
+  const d = calcDerived(s);
+  const vit  = s.vitCur ?? d.vit;
+  const von  = s.vonCur ?? d.vontade;
+  const hpPct = Math.max(0,Math.round(vit/d.vit*100));
+  const wpPct = Math.max(0,Math.round(von/d.vontade*100));
+  const powers = [s.power1,s.power2,s.power3].filter(Boolean);
+    const dmg = getDamageValues(s);
+  const avatarHTML = s.avatar
+    ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>`
+    : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
+
+  return `
+    <!-- LEFT -->
+    <div style="border-right:1px solid var(--border2);display:flex;flex-direction:column">
+      <div style="border-bottom:1px solid var(--border2)">${avatarHTML}</div>
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+        <div style="font-family:var(--font-d);font-size:.82rem;letter-spacing:2px;color:var(--accent);margin-bottom:2px">${s.name||s.username}</div>
+        <div style="font-size:.63rem;color:var(--accent2);letter-spacing:1px;margin-bottom:2px">${CLS_EMOJI[s.cls]||''} ${s.cls||'?'}</div>
+        <div style="font-size:.6rem;color:var(--muted)">${s.type||'?'} · ${s.sex==='M'?'Masculino':s.sex==='F'?'Feminino':'?'}</div>
+        ${s.appearance?`<div style="font-size:.58rem;color:var(--muted);margin-top:4px;font-style:italic">${s.appearance}</div>`:''}
+      </div>
+      <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-d);font-size:.5rem;color:var(--muted);margin-bottom:2px"><span>VIT</span><b style="color:var(--hp);font-weight:400">${vit}/${d.vit}</b></div>
+          <div style="height:5px;background:var(--border)"><div style="height:100%;width:${hpPct}%;background:var(--hp)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-d);font-size:.5rem;color:var(--muted);margin-bottom:2px"><span>VON</span><b style="color:var(--wp);font-weight:400">${von}/${d.vontade}</b></div>
+          <div style="height:5px;background:var(--border)"><div style="height:100%;width:${wpPct}%;background:var(--wp)"></div></div>
+        </div>
+        <div style="font-family:var(--font-m);font-size:.58rem;color:var(--muted)">⭐ XP: <b style="color:var(--accent)">${s.xpTotal||0}</b></div>
+      </div>
+    </div>
+    <!-- RIGHT -->
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto">
+      <div>
+        <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Atributos</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+          ${[['ATQ',s.atq,'rgba(255,95,126,.3)'],['RES',s.res,'rgba(58,255,200,.3)'],['SAB',s.sab,'rgba(200,123,255,.3)'],['AGI',s.agi,'rgba(107,95,255,.3)']].map(([n,v,c])=>`
+          <div style="background:var(--card);border:1px solid ${c};padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${n}</div>
+            <div style="font-family:var(--font-d);font-size:1.1rem;color:var(--accent)">${v||0}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Ficha de Combate</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
+          ${[['Iniciativa',d.ini],['J. de Ataque',d.jAtq],['Defesa',d.def],['Res. Mágica',d.rmag],['Dano Fís.',dmg.fis],['Dano Mag.',dmg.mag]].map(([l,v])=>`
+          <div style="background:var(--card);border:1px solid var(--border);padding:5px 8px">
+            <div style="font-size:.45rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${l}</div>
+            <div style="font-family:var(--font-d);font-size:.82rem;color:var(--text);margin-top:1px">${v}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      ${s.eq1||s.eq2?`<div>
+        <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Equipamento</div>
+        ${s.eq1?`<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2);margin-bottom:3px">${s.eq1}</div>`:''}
+        ${s.eq2?`<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2)">${s.eq2}</div>`:''}
+      </div>`:''}
+      ${powers.length?`<div>
+        <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Poderes</div>
+        ${powers.map(p=>`<div style="font-size:.7rem;color:var(--wp);margin-bottom:4px">◆ ${p}</div>`).join('')}
+      </div>`:''}
+      ${s.notes?`<div>
+        <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Anotações</div>
+        <div style="font-size:.72rem;color:var(--muted);line-height:1.6;white-space:pre-wrap">${s.notes}</div>
+      </div>`:''}
+    </div>`;
+}
+
+function openSheetPopup(username){
+  const s = sheets[username]; if(!s) return;
+  document.getElementById('sheet-popup-content').innerHTML = buildSheetPopupHTML(s);
+  document.getElementById('sheet-popup').classList.add('open');
+}
+function closeSheetPopup(e){ if(e.target===document.getElementById('sheet-popup')) closeSheetPopupForce(); }
+function closeSheetPopupForce(){ document.getElementById('sheet-popup').classList.remove('open'); }
+
+// ── HUD — compact (nome + cls + VIT/VON editável) ─────────────────
+function renderHUD() {
+  const el = document.getElementById('mhud-chars');
+  el.innerHTML = '';
+  Object.values(sheets).forEach(s => {
+    const d = calcDerived(s);
+    const vit = s.vitCur ?? d.vit;
+    const von = s.vonCur ?? d.vontade;
+    const hpPct = Math.max(0,Math.round(vit/d.vit*100));
+    const wpPct = Math.max(0,Math.round(von/d.vontade*100));
+    el.innerHTML += `
+      <div class="mhud-char" onclick="openSheetPopup('${s.username}')">
+        <div class="mhud-char-name">${CLS_EMOJI[s.cls]||'❓'} ${s.name||s.username}</div>
+        <div class="mhud-char-sub">${s.cls||'?'} · ${s.type||'?'}</div>
+        <div class="mhud-edit">
+          <span style="font-size:.48rem;color:var(--muted)">VIT</span>
+          <input class="mhud-inp" type="number" value="${vit}" min="0" max="${d.vit}"
+            onclick="event.stopPropagation()"
+            onchange="masterUpdateStat('${s.username}','vitCur',this.value)"/>
+          <span style="font-size:.55rem;color:var(--muted)">/</span>
+          <span style="font-family:var(--font-m);font-size:.6rem;color:var(--muted)">${d.vit}</span>
+          <span style="font-size:.48rem;color:var(--muted);margin-left:4px">VON</span>
+          <input class="mhud-inp wp" type="number" value="${von}" min="0" max="${d.vontade}"
+            onclick="event.stopPropagation()"
+            onchange="masterUpdateStat('${s.username}','vonCur',this.value)"/>
+          <span style="font-size:.55rem;color:var(--muted)">/</span>
+          <span style="font-family:var(--font-m);font-size:.6rem;color:var(--muted)">${d.vontade}</span>
+        </div>
+        <div class="mhud-bar">
+          <div class="mhud-track"><div class="mhud-fill hp" style="width:${hpPct}%"></div></div>
+        </div>
+        <div class="mhud-bar">
+          <div class="mhud-track"><div class="mhud-fill wp" style="width:${wpPct}%"></div></div>
+        </div>
+        <div style="font-size:.5rem;color:var(--muted);text-align:right;margin-top:3px;font-family:var(--font-m)">ver ficha ▸</div>
+      </div>`;
+  });
+}
+
+function masterUpdateStat(username, field, value) {
+  socket.emit('update_stats', { username, stats: { [field]: parseInt(value)||0 } });
+}
+
+// ── PLAYERS TAB — ficha estilo editorial ──────────────────────────
+function renderPlayersTab() {
+  const el = document.getElementById('tab-players');
+  el.innerHTML = '';
+
+  // ── Toolbar de gerenciamento ──
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap';
+  toolbar.innerHTML = `
+    <div style="font-family:var(--font-d);font-size:.6rem;letter-spacing:1px;color:var(--muted)">GERENCIAR FICHAS</div>
+    <button class="btn btn-accent sm" onclick="openAddSheetModal()">➕ Adicionar Ficha</button>
+    <div style="font-family:var(--font-m);font-size:.62rem;color:var(--muted)">${Object.keys(sheets).length} ficha(s) carregada(s)</div>`;
+  el.appendChild(toolbar);
+
+  if (Object.keys(sheets).length === 0) {
+    el.innerHTML += '<div style="font-family:var(--font-m);font-size:.75rem;color:var(--muted)">Nenhuma ficha enviada ainda. Adicione uma ou peça aos jogadores que enviem pelo painel deles.</div>';
+    return;
+  }
+
+  Object.values(sheets).forEach(s => {
+    const d = calcDerived(s);
+    const vit = s.vitCur ?? d.vit;
+    const von = s.vonCur ?? d.vontade;
+    const hpPct = Math.max(0,Math.round(vit/d.vit*100));
+    const wpPct = Math.max(0,Math.round(von/d.vontade*100));
+    const powers = [s.power1,s.power2,s.power3].filter(Boolean);
+    const dmg = getDamageValues(s);
+    const avatarHTML = s.avatar
+      ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block;border-bottom:1px solid var(--border2)"/>`
+      : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3.5rem;background:var(--card);border-bottom:1px solid var(--border2)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
+
+    const card = document.createElement('div');
+    card.className = 'sheet-card';
+    card.style.position = 'relative';
+    card.innerHTML = `
+      <!-- Botões de ação -->
+      <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5" onclick="event.stopPropagation()">
+        <button class="btn btn-muted sm" onclick="exportSheet('${s.username}')" title="Exportar ficha como JSON">💾</button>
+        <button class="btn btn-muted sm" onclick="openReplaceSheetModal('${s.username}')" title="Substituir ficha">🔄</button>
+        <button class="btn btn-danger sm" onclick="removeSheet('${s.username}')" title="Remover ficha">✕</button>
+      </div>
+      <div class="sc-left">
+        ${avatarHTML}
+        <div class="sc-identity">
+          <div class="sc-name">${s.name||s.username}</div>
+          <div class="sc-cls">${CLS_EMOJI[s.cls]||''} ${s.cls||'?'}</div>
+          <div class="sc-type">${s.type||'?'} · ${s.sex==='M'?'Masculino':s.sex==='F'?'Feminino':'?'}</div>
+          ${s.appearance?`<div style="font-size:.58rem;color:var(--muted);margin-top:4px;font-style:italic">${s.appearance}</div>`:''}
+          <div style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);margin-top:4px">👤 ${s.username}</div>
+        </div>
+        <div class="sc-vit-von">
+          <div>
+            <div class="sc-bar-label"><span>VIT</span><b style="color:var(--hp)">${vit} / ${d.vit}</b></div>
+            <div class="sc-track"><div class="sc-fill hp" style="width:${hpPct}%"></div></div>
+          </div>
+          <div>
+            <div class="sc-bar-label"><span>VON</span><b style="color:var(--wp)">${von} / ${d.vontade}</b></div>
+            <div class="sc-track"><div class="sc-fill wp" style="width:${wpPct}%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-right">
+        <div>
+          <div class="sc-section">Atributos</div>
+          <div class="sc-attrs">
+            <div class="sc-attr-block atq"><div class="sc-attr-name">ATQ</div><div class="sc-attr-val">${s.atq||0}</div></div>
+            <div class="sc-attr-block res"><div class="sc-attr-name">RES</div><div class="sc-attr-val">${s.res||0}</div></div>
+            <div class="sc-attr-block sab"><div class="sc-attr-name">SAB</div><div class="sc-attr-val">${s.sab||0}</div></div>
+            <div class="sc-attr-block agi"><div class="sc-attr-name">AGI</div><div class="sc-attr-val">${s.agi||0}</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="sc-section">Ficha de Combate</div>
+          <div class="sc-combat">
+            <div class="sc-combat-stat"><div class="sc-combat-label">Iniciativa</div><div class="sc-combat-val">${d.ini}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">J. de Ataque</div><div class="sc-combat-val">${d.jAtq}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">Defesa</div><div class="sc-combat-val">${d.def}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">Res. Mágica</div><div class="sc-combat-val">${d.rmag}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">Dano Fís.</div><div class="sc-combat-val">${dmg.fis}</div></div>
+            <div class="sc-combat-stat"><div class="sc-combat-label">Dano Mag.</div><div class="sc-combat-val">${dmg.mag}</div></div>
+          </div>
+        </div>
+        ${powers.length?`<div>
+          <div class="sc-section">Poderes</div>
+          <div class="sc-powers">${powers.map(p=>`<div class="sc-power">${p}</div>`).join('')}</div>
+        </div>`:''}
+      </div>`;
+    card.onclick = () => openSheetPopup(s.username);
+    el.appendChild(card);
+  });
+}
+
+// ── SHEET MANAGEMENT ──────────────────────────────────────────────
+let addSheetTarget = null; // null = nova ficha, username = substituir
+
+function openAddSheetModal(targetUsername = null) {
+  addSheetTarget = targetUsername;
+  // Build user list for new sheet
+  const modalHTML = targetUsername
+    ? `<p style="font-size:.75rem;color:var(--muted)">Substitua a ficha de <b style="color:var(--accent)">${targetUsername}</b> por um novo JSON.</p>`
+    : `<div class="field" style="margin-bottom:10px">
+        <label>Jogador (usuário)</label>
+        <input class="inp" id="add-sheet-user" type="text" placeholder="username do jogador"/>
+       </div>
+       <p style="font-size:.7rem;color:var(--muted)">Digite o username exato do jogador e carregue o JSON da ficha.</p>`;
+
+  document.getElementById('add-sheet-modal-body').innerHTML = modalHTML;
+  document.getElementById('add-sheet-preview').style.display = 'none';
+  document.getElementById('add-sheet-file').value = '';
+  document.getElementById('add-sheet-modal').classList.add('open');
+}
+
+function exportSheet(username) {
+  const s = sheets[username];
+  if (!s) { toast('Ficha não encontrada'); return; }
+  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `ficha_${(s.name || username).replace(/\s+/g,'_')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  toast(`💾 Ficha de ${s.name || username} exportada`);
+}
+
+function openReplaceSheetModal(username) {
+  openAddSheetModal(username);
+}
+
+async function removeSheet(username) {
+  if (!confirm(`Remover a ficha de ${username}?`)) return;
+  try {
+    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error();
+    toast(`Ficha de ${username} removida`);
+  } catch { toast('Erro ao remover ficha'); }
+}
+
+let pendingAddSheet = null;
+function handleAddSheetFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      pendingAddSheet = JSON.parse(ev.target.result);
+      const prev = document.getElementById('add-sheet-preview');
+      prev.style.display = '';
+      prev.querySelector('.preview-content').innerHTML =
+        `Nome: <b style="color:var(--accent)">${pendingAddSheet.name||'?'}</b><br>
+         Classe: ${pendingAddSheet.cls||'?'} · Tipo: ${pendingAddSheet.type||'?'}<br>
+         ATQ:${pendingAddSheet.atq||0} RES:${pendingAddSheet.res||0} SAB:${pendingAddSheet.sab||0} AGI:${pendingAddSheet.agi||0}`;
+    } catch { toast('Arquivo inválido'); }
+  };
+  reader.readAsText(file);
+}
+
+async function confirmAddSheet() {
+  if (!pendingAddSheet) return;
+  const username = addSheetTarget || document.getElementById('add-sheet-user')?.value.trim();
+  if (!username) { toast('Digite o username do jogador'); return; }
+  try {
+    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(pendingAddSheet)
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    toast(`✅ Ficha de ${username} ${addSheetTarget?'atualizada':'adicionada'}!`);
+    document.getElementById('add-sheet-modal').classList.remove('open');
+    pendingAddSheet = null;
+  } catch(e) { toast('Erro: ' + e.message); }
+}
+
+// ── NARRATIVE ─────────────────────────────────────────────────────
+function sendNarrate() {
+  const inp = document.getElementById('narrate-inp');
+  const content = inp.value.trim();
+  if (!content) return;
+  inp.value = ''; autoResize(inp);
+  socket.emit('narrate', { content });
+}
+
+function rollFree() { socket.emit('roll', { attr: 0, attrName: '' }); }
+
+function rollCustomMaster() {
+  const qty   = parseInt(document.getElementById('dice-qty').value)   || 1;
+  const faces = parseInt(document.getElementById('dice-faces').value) || 6;
+  const bonus = parseInt(document.getElementById('dice-bonus').value) || 0;
+  const diffVal = activeDifficulty?.value || 0;
+  socket.emit('roll_custom', { qty, faces, bonus, difficulty: diffVal });
+}
+
+function toggleDicePanel() {
+  const panel = document.getElementById('dice-expanded');
+  const btn   = document.getElementById('toggle-dice-btn');
+  const open  = panel.style.display === 'flex';
+  panel.style.display = open ? 'none' : 'flex';
+  panel.style.flexDirection = 'column';
+  btn.textContent = open ? '+ dados ▾' : '+ dados ▴';
+  btn.style.color = open ? 'var(--muted)' : 'var(--accent2)';
+  btn.style.borderColor = open ? 'var(--border2)' : 'var(--accent2)';
+}
+
+function setDifficulty() {
+  const label = document.getElementById('diff-label').value.trim() || 'Teste';
+  const value = document.getElementById('diff-value').value;
+  if (!value) { toast('Escolha uma dificuldade'); return; }
+  socket.emit('difficulty_set', { label, value: parseInt(value) });
+  toast(`✅ Teste "${label}" definido — dificuldade ${value}`);
+}
+
+function clearDifficulty() {
+  socket.emit('difficulty_set', null);
+  toast('Teste removido');
+}
+
+function applyDifficultyState(data) {
+  activeDifficulty = data && data.value ? { label: data.label || 'Teste', value: parseInt(data.value) } : null;
+  const ad = document.getElementById('active-diff');
+  const SCALE = {6:'Fácil',8:'Médio',10:'Difícil',12:'Desafiador',14:'Formidável',16:'Heroico',18:'Lendário',20:'Quase Impossível',22:'Praticamente Impossível'};
+  if (!activeDifficulty) {
+    ad.style.display = 'none';
+    document.getElementById('diff-label').value = '';
+    document.getElementById('diff-value').value = '';
+    return;
+  }
+  document.getElementById('diff-label').value = activeDifficulty.label;
+  document.getElementById('diff-value').value = String(activeDifficulty.value);
+  ad.textContent = `🎯 ATIVO: ${activeDifficulty.label} · Dificuldade ${activeDifficulty.value} (${SCALE[activeDifficulty.value]||''})`;
+  ad.style.display = 'block';
+}
+
+function sendChat() {
+  const inp = document.getElementById('chat-inp');
+  const content = inp.value.trim(); if (!content) return;
+  inp.value = '';
+  socket.emit('chat', { content });
+}
+
+// ── MARKDOWN ─────────────────────────────────────────────────────
+function inlineMd(t){
+  return t
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/__(.+?)__/g,'<strong>$1</strong>')
+    .replace(/_(.+?)_/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code style="font-family:var(--font-m);color:var(--accent2);font-size:.85em;background:rgba(107,95,255,.1);padding:1px 4px">$1</code>');
+}
+
+function mdToHtml(text){
+  const lines = text.split('\n');
+  let html = '', inList = false;
+  for(let raw of lines){
+    if(inList && !raw.match(/^[\*\-] /)){ html += '</ul>'; inList = false; }
+    if(!raw.trim()) continue;
+    if(raw.startsWith('### ')){ html += `<h3 style="font-family:var(--font-d);font-size:.72rem;color:var(--accent2);letter-spacing:1px;margin:8px 0 4px">${inlineMd(raw.slice(4))}</h3>`; continue; }
+    if(raw.startsWith('## ')) { html += `<h2 style="font-family:var(--font-d);font-size:.82rem;color:var(--accent);letter-spacing:1px;margin:8px 0 4px">${inlineMd(raw.slice(3))}</h2>`; continue; }
+    if(raw.startsWith('# '))  { html += `<h1 style="font-family:var(--font-d);font-size:.95rem;color:var(--accent);letter-spacing:2px;margin:8px 0 4px">${inlineMd(raw.slice(2))}</h1>`; continue; }
+    if(raw.match(/^[-*]{3,}$/)){ html += '<hr style="border:none;border-top:1px solid var(--border2);margin:8px 0">'; continue; }
+    if(raw.match(/^[\*\-] /)){ if(!inList){html+='<ul style="padding-left:16px;margin-bottom:6px">';inList=true;} html+=`<li>${inlineMd(raw.slice(2))}</li>`; continue; }
+    html += `<p style="margin-bottom:5px">${inlineMd(raw)}</p>`;
+  }
+  if(inList) html += '</ul>';
+  return html;
+}
+
+// ── RENDER MESSAGES ───────────────────────────────────────────────
+function renderMessage(msg) {
+  const log = document.getElementById('log');
+  const el = document.createElement('div');
+  if (msg.type === 'narrate') {
+    el.className = 'msg-narrate';
+    el.innerHTML = mdToHtml(msg.content);
+  } else if (msg.type === 'action') {
+    el.className = 'msg-action';
+    el.innerHTML = `<div class="act-author">${msg.author}:</div>${inlineMd(msg.content)}`;
+  } else if (msg.type === 'roll' || msg.type === 'roll_custom') {
+    const cls = msg.isCritical?'critical':msg.isFumble?'fumble':'';
+    el.className = `msg-roll ${cls}`;
+    const tag = msg.isCritical?'<span class="roll-tag">🌟 ACERTO DECISIVO</span>'
+               :msg.isFumble ?'<span class="roll-tag">💀 FALHA CRÍTICA</span>':'';
+    let diceLabel, body;
+    if (msg.type === 'roll_custom') {
+      diceLabel = `${msg.qty}d${msg.faces}`;
+      const bonusStr = msg.bonus > 0 ? ` + ${msg.bonus}` : msg.bonus < 0 ? ` ${msg.bonus}` : '';
+      body = `<span class="roll-dice">${msg.rolls?.join(' + ')||'?'}</span>${bonusStr} = <span class="roll-total">${msg.total}</span>`;
+    } else {
+      diceLabel = msg.attrName ? `${msg.attrName}` : '2d6';
+      const attrLabel = msg.attr ? ` + ${msg.attr}` : '';
+      body = `<span class="roll-dice">[${msg.d1}] + [${msg.d2}]</span>${attrLabel} = <span class="roll-total">${msg.total}</span>`;
+    }
+    let diffResult = '';
+    if (msg.difficulty) {
+      const success = msg.total >= msg.difficulty;
+      diffResult = success
+        ? `<span style="color:var(--hp);margin-left:8px">✅ SUCESSO vs ${msg.difficulty}</span>`
+        : `<span style="color:var(--accent3);margin-left:8px">❌ FALHA vs ${msg.difficulty}</span>`;
+    }
+    el.innerHTML = `<div class="roll-author">${msg.author} rolou ${diceLabel}</div>${body}${tag}${diffResult}`;
+  } else if (msg.type === 'system') {
+    el.className = 'msg-system'; el.textContent = msg.content;
+  } else if (msg.type === 'image') {
+    el.className = 'msg-image';
+    el.innerHTML = `
+      <div class="img-author">🖼 ${msg.author}</div>
+      <img src="${msg.src}" alt="${msg.caption||'imagem'}" style="max-width:100%;max-height:400px;object-fit:contain;border:1px solid var(--border2);display:block;margin-top:6px"/>
+      ${msg.caption ? `<div class="img-caption">${msg.caption}</div>` : ''}`;
+  }
+  if (el.innerHTML || el.textContent) { log.appendChild(el); scrollLog(); }
+}
+
+function renderChat(msg) {
+  const log = document.getElementById('chat-log');
+  const el = document.createElement('div'); el.className = 'chat-msg';
+  el.innerHTML = `<div class="chat-author ${msg.role==='master'?'master':''}">${msg.author}</div><div class="chat-text">${inlineMd(msg.content)}</div>`;
+  log.appendChild(el); log.scrollTop = log.scrollHeight;
+}
+
+function appendSystem(text) {
+  const log = document.getElementById('log');
+  const el = document.createElement('div'); el.className = 'msg-system'; el.textContent = text;
+  log.appendChild(el); scrollLog();
+}
+function scrollLog() { const l=document.getElementById('log'); l.scrollTop=l.scrollHeight; }
+
+// ── USERS TAB ─────────────────────────────────────────────────────
+function renderUserStatusList(list) {
+  const el = document.getElementById('online-users');
+  if (!el) return;
+  el.innerHTML = list.map(u => `
+    <div class="online-item ${u.online?'':'offline'} ${u.role==='master'?'master':''}">
+      <div class="dot"></div>${u.displayName}${u.role==='master'?' ✦':''}
+      <span style="margin-left:auto;font-size:.5rem;color:var(--muted)">${u.online?'online':'offline'}</span>
+    </div>`).join('');
+}
+
+async function loadUsers() {
+  try {
+    const res = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } });
+    const users = await res.json();
+    const el = document.getElementById('user-list');
+    el.innerHTML = users.map(u => `
+      <div class="user-row">
+        <div class="user-display">${u.displayName}</div>
+        <div class="user-role">${u.username} · ${u.role} · ${u.online ? 'online' : 'offline'}</div>
+        ${u.role !== 'master' ? `<button class="btn btn-danger sm" onclick="deleteUser('${u.username}')">Remover</button>` : ''}
+      </div>`).join('');
+  } catch { toast('Erro ao carregar usuários'); }
+}
+
+async function createUser() {
+  const display = document.getElementById('nu-display').value.trim();
+  const username = document.getElementById('nu-user').value.trim();
+  const password = document.getElementById('nu-pass').value || '12345';
+  const role = document.getElementById('nu-role').value;
+  const errEl = document.getElementById('nu-err');
+  errEl.style.display = 'none';
+  if (!username) { errEl.textContent='Preencha o usuário'; errEl.style.display='block'; return; }
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ username, password, displayName: display||username, role })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent=data.error; errEl.style.display='block'; return; }
+    toast(`✅ ${username} criado!`);
+    document.getElementById('nu-display').value='';
+    document.getElementById('nu-user').value='';
+    document.getElementById('nu-pass').value='12345';
+    loadUsers();
+  } catch { toast('Erro ao criar usuário'); }
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Remover ${username}?`)) return;
+  try {
+    await fetch(`/api/users/${username}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    toast(`${username} removido`); loadUsers();
+  } catch { toast('Erro'); }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', ['session','players','users'][i]===name));
+  document.getElementById('tab-session').style.display = name==='session'?'flex':'none';
+  document.getElementById('tab-players').style.display = name==='players'?'flex':'none';
+  document.getElementById('tab-users').style.display   = name==='users'  ?'flex':'none';
+  if (name==='users') loadUsers();
+  if (name==='players') renderPlayersTab();
+}
+
+// ── AUTO RESIZE ───────────────────────────────────────────────────
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+document.getElementById('narrate-inp').addEventListener('input', function(){ autoResize(this); });
+document.getElementById('narrate-inp').addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendNarrate();} });
+document.getElementById('chat-inp').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
+
+// ── TOAST ─────────────────────────────────────────────────────────
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+function openChangePasswordModal() {
+  ['cp-old','cp-new','cp-confirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const errEl = document.getElementById('cp-err');
+  if (errEl) errEl.style.display = 'none';
+  document.getElementById('change-password-modal').classList.add('open');
+}
+
+async function changePassword() {
+  const oldPassword = document.getElementById('cp-old').value;
+  const newPassword = document.getElementById('cp-new').value;
+  const confirmPassword = document.getElementById('cp-confirm').value;
+  const errEl = document.getElementById('cp-err');
+  errEl.style.display = 'none';
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    errEl.textContent = 'Preencha todos os campos.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPassword.length < 5) {
+    errEl.textContent = 'A nova senha deve ter pelo menos 5 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    errEl.textContent = 'A confirmação não confere com a nova senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ oldPassword, newPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Erro ao alterar senha.';
+      errEl.style.display = 'block';
+      return;
+    }
+    closeModal('change-password-modal');
+    toast('✅ Senha alterada!');
+  } catch {
+    errEl.textContent = 'Erro de conexão ao alterar senha.';
+    errEl.style.display = 'block';
+  }
+}
+
+function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
+</script>
+</body>
+</html>
