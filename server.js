@@ -243,19 +243,34 @@ app.get('/api/backup', authMiddleware, masterOnly, (req, res) => {
 });
 
 app.post('/api/restore', authMiddleware, masterOnly, (req, res) => {
-  const { users, rooms, roomData } = req.body;
-  if (!users || !rooms) return res.status(400).json({ error: 'Backup incompleto' });
-  writeDB('users', users);
-  writeDB('rooms', rooms);
-  if (roomData) {
-    Object.entries(roomData).forEach(([id, data]) => {
+  const body = req.body;
+  if (!body.users) return res.status(400).json({ error: 'Backup incompleto — falta campo users' });
+
+  writeDB('users', body.users);
+
+  // ── v2 backup (has rooms + roomData) ──
+  if (body.rooms && body.roomData) {
+    writeDB('rooms', body.rooms);
+    Object.entries(body.roomData).forEach(([id, data]) => {
       if (data.sheets)  writeRoomDB(id, 'sheets',  data.sheets);
       if (data.history) writeRoomDB(id, 'history', data.history);
       if (data.session) writeRoomDB(id, 'session', data.session);
     });
+
+  // ── v1 backup (legacy: sheets/history/sessions at root) ──
+  } else if (body.sheets || body.history || body.sessions) {
+    // Migrate everything to the 'herois' room
+    if (body.sheets)   writeRoomDB('herois', 'sheets',  body.sheets);
+    if (body.history)  writeRoomDB('herois', 'history', body.history);
+    if (body.sessions) writeRoomDB('herois', 'session', body.sessions);
+    // Ensure default rooms exist
+    initDefaultRooms();
+  } else {
+    return res.status(400).json({ error: 'Formato de backup não reconhecido' });
   }
+
   io.emit('server_restored');
-  res.json({ ok: true });
+  res.json({ ok: true, restoredAt: new Date().toISOString() });
 });
 
 // ══════════════════════════════════════════════════════════════════
