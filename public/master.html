@@ -98,30 +98,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .img-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--accent2); margin-bottom: 2px; }
 .img-caption { font-size: .72rem; color: var(--muted); margin-top: 4px; font-style: italic; }
 
-/* AUDIO MESSAGE */
-.msg-audio { border-left: 2px solid var(--wp); padding-left: 10px; }
-.audio-author { font-family: var(--font-d); font-size: .55rem; letter-spacing: 1px; color: var(--wp); margin-bottom: 5px; }
-.audio-player { width: 100%; max-width: 340px; height: 32px; outline: none; accent-color: var(--wp); }
-.audio-caption { font-size: .68rem; color: var(--muted); margin-top: 3px; font-style: italic; }
-
-/* RECORDING INDICATOR */
-#rec-indicator {
-  display: none; align-items: center; gap: 8px;
-  font-family: var(--font-m); font-size: .68rem; color: var(--accent3);
-  padding: 4px 10px; border: 1px solid var(--accent3);
-  background: rgba(255,95,126,.06);
-}
-#rec-indicator.active { display: flex; }
-.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); animation: blink 1s infinite; flex-shrink: 0; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-#rec-timer { min-width: 36px; }
-.rec-stop-btn {
-  font-family: var(--font-d); font-size: .52rem; letter-spacing: 1px;
-  padding: 3px 8px; border: 1px solid var(--accent3); background: transparent;
-  color: var(--accent3); cursor: pointer; margin-left: auto;
-}
-.rec-stop-btn:hover { background: var(--accent3); color: #fff; }
-
 /* NARRATE INPUT */
 #narrate-area {
   border-top: 1px solid var(--border); background: var(--panel);
@@ -326,13 +302,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
           <span class="dice-label">🎲 ROLAR:</span>
           <button class="free-roll-btn" onclick="rollFree()">2d6</button>
           <button class="toggle-dice-btn" id="toggle-dice-btn" onclick="toggleDicePanel()" style="font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;padding:3px 8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">+ dados ▾</button>
-          <button class="free-roll-btn" onclick="startRecording()" id="rec-btn" style="border-color:var(--wp);color:var(--wp)" title="Gravar áudio">🎙 Gravar</button>
-        </div>
-        <div id="rec-indicator">
-          <div class="rec-dot"></div>
-          <span>Gravando</span>
-          <span id="rec-timer">0:00</span>
-          <button class="rec-stop-btn" onclick="stopRecording()">■ Parar</button>
         </div>
         <div class="narrate-row">
           <span style="font-family:var(--font-m);color:var(--accent);font-size:.9rem;flex-shrink:0">✦</span>
@@ -484,9 +453,12 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
+const roomId = localStorage.getItem('hi_room') || 'herois';
+const roomName = localStorage.getItem('hi_room_name') || 'Sala';
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
+  localStorage.removeItem('hi_room'); localStorage.removeItem('hi_room_name');
   window.location.href = '/';
 }
 
@@ -494,10 +466,8 @@ if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
-document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
-document.title = roomName + ' — Mestre';
-document.title = 'Mestre — ' + roomName;
-document.getElementById('room-label').textContent = roomName;
+  document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
+  document.title = roomName + ' — Mestre';
 }
 
 // ── IMAGE TOOLS ───────────────────────────────────────────────────
@@ -651,8 +621,6 @@ async function clearIntro() {
 }
 
 // ── SOCKET ───────────────────────────────────────────────────────
-const roomId = localStorage.getItem('hi_room') || 'herois';
-const roomName = localStorage.getItem('hi_room_name') || 'Sala';
 const socket = io({ auth: { token, roomId } });
 let sheets = {};
 let activeDifficulty = null;
@@ -1010,7 +978,7 @@ function openReplaceSheetModal(username) {
 async function removeSheet(username) {
   if (!confirm(`Remover a ficha de ${username}?`)) return;
   try {
-    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+    const res = await fetch(`/api/rooms/${roomId}/sheets/username`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -1042,7 +1010,7 @@ async function confirmAddSheet() {
   const username = addSheetTarget || document.getElementById('add-sheet-user')?.value.trim();
   if (!username) { toast('Digite o username do jogador'); return; }
   try {
-    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+    const res = await fetch(`/api/rooms/${roomId}/sheets/username`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(pendingAddSheet)
@@ -1052,56 +1020,6 @@ async function confirmAddSheet() {
     document.getElementById('add-sheet-modal').classList.remove('open');
     pendingAddSheet = null;
   } catch(e) { toast('Erro: ' + e.message); }
-}
-
-// ── AUDIO RECORDING ──────────────────────────────────────────────
-let mediaRecorder = null;
-let audioChunks = [];
-let recTimerInterval = null;
-let recSeconds = 0;
-const MAX_REC_SECONDS = 40;
-
-async function startRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') return;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    // Pick best supported format
-    const mimeType = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']
-      .find(t => MediaRecorder.isTypeSupported(t)) || '';
-    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-    audioChunks = [];
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-      if (blob.size > 3 * 1024 * 1024) { toast('Áudio muito longo — máximo ~60s'); return; }
-      const reader = new FileReader();
-      reader.onload = ev => socket.emit('audio', { src: ev.target.result });
-      reader.readAsDataURL(blob);
-    };
-    mediaRecorder.start(200);
-    // UI
-    document.getElementById('rec-indicator').classList.add('active');
-    document.getElementById('rec-btn').style.opacity = '.4';
-    recSeconds = 0;
-    recTimerInterval = setInterval(() => {
-      recSeconds++;
-      const m = Math.floor(recSeconds/60), s = recSeconds%60;
-      document.getElementById('rec-timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
-      if (recSeconds >= MAX_REC_SECONDS) stopRecording();
-    }, 1000);
-  } catch(e) {
-    toast('Microfone não disponível: ' + e.message);
-  }
-}
-
-function stopRecording() {
-  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
-  mediaRecorder.stop();
-  clearInterval(recTimerInterval);
-  document.getElementById('rec-indicator').classList.remove('active');
-  document.getElementById('rec-btn').style.opacity = '1';
-  document.getElementById('rec-timer').textContent = '0:00';
 }
 
 // ── NARRATIVE ─────────────────────────────────────────────────────
@@ -1239,12 +1157,6 @@ function renderMessage(msg) {
       <div class="img-author">🖼 ${msg.author}</div>
       <img src="${msg.src}" alt="${msg.caption||'imagem'}" style="max-width:100%;max-height:400px;object-fit:contain;border:1px solid var(--border2);display:block;margin-top:6px"/>
       ${msg.caption ? `<div class="img-caption">${msg.caption}</div>` : ''}`;
-  } else if (msg.type === 'audio') {
-    el.className = 'msg-audio';
-    el.innerHTML = `
-      <div class="audio-author">🎙 ${msg.author}</div>
-      <audio class="audio-player" controls preload="none" src="${msg.src}"></audio>
-      ${msg.caption ? `<div class="audio-caption">${msg.caption}</div>` : ''}`;
   }
   if (el.innerHTML || el.textContent) { log.appendChild(el); scrollLog(); }
 }
