@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'herois-improvaveis-secret-2024';
 const DATA_DIR = path.join(__dirname, 'data');
 
-// ── Ensure data dir ──────────────────────────────────────────────
+// ── Ensure data dirs ─────────────────────────────────────────────
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 
 // ── JSON DB helpers ──────────────────────────────────────────────
@@ -27,86 +27,109 @@ function readDB(name) {
 function writeDB(name, data) {
   fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), JSON.stringify(data, null, 2));
 }
+function readRoomDB(roomId, name) {
+  const dir = path.join(DATA_DIR, 'rooms', roomId);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${name}.json`);
+  if (!fs.existsSync(file)) return {};
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
+}
+function writeRoomDB(roomId, name, data) {
+  const dir = path.join(DATA_DIR, 'rooms', roomId);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${name}.json`), JSON.stringify(data, null, 2));
+}
 
-// Initialize DBs
-['users', 'sessions', 'history', 'sheets'].forEach(name => {
+// ── Init global DBs ──────────────────────────────────────────────
+['users'].forEach(name => {
   if (!fs.existsSync(path.join(DATA_DIR, `${name}.json`))) writeDB(name, {});
 });
+
+// ── Default rooms ────────────────────────────────────────────────
+function initDefaultRooms() {
+  const rooms = readDB('rooms');
+  const defaults = [
+    { id: 'herois',     name: 'Heróis Improváveis',    description: 'Sistema 4C · Riacho Doce · Colégio Dom Álvaro', icon: '⚡', color: '#c8f03a' },
+    { id: 'defensores', name: 'Defensores do Paraíso',  description: 'Sistema 4C · HyBrasil', icon: '🛡️', color: '#3affc8' },
+    { id: 'kaitro',     name: 'Crônicas de Kaitro',     description: 'Sistema 4C · Mundo de Kaitro', icon: '⚔️', color: '#c87bff' },
+  ];
+  let changed = false;
+  defaults.forEach(r => { if (!rooms[r.id]) { rooms[r.id] = r; changed = true; } });
+  if (changed) writeDB('rooms', rooms);
+}
+initDefaultRooms();
 
 // ── Middleware ───────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Auth label helper (must be before routes and socket) ─────────
-function getAuthorLabel(username, displayName) {
-  const sheets = readDB('sheets');
-  const sheet = sheets[username];
-  if (sheet && sheet.name) return `${sheet.name} (${displayName})`;
+// ── Auth helpers ─────────────────────────────────────────────────
+function getAuthorLabel(username, displayName, roomId) {
+  if (roomId) {
+    const sheets = readRoomDB(roomId, 'sheets');
+    const sheet = sheets[username];
+    if (sheet && sheet.name) return `${sheet.name} (${displayName})`;
+  }
   return displayName;
 }
 
-// ── Auth middleware ──────────────────────────────────────────────
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token ausente' });
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch { res.status(401).json({ error: 'Token inválido' }); }
+  try { req.user = jwt.verify(token, JWT_SECRET); next(); }
+  catch { res.status(401).json({ error: 'Token inválido' }); }
 }
-
 function masterOnly(req, res, next) {
-  if (req.user.role !== 'master') return res.status(403).json({ error: 'Apenas o Mestre pode fazer isso' });
+  if (req.user.role !== 'master') return res.status(403).json({ error: 'Apenas o Mestre' });
   next();
 }
 
 // ══════════════════════════════════════════════════════════════════
 // AUTH ROUTES
 // ══════════════════════════════════════════════════════════════════
-
-// Login
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const users = readDB('users');
   const user = users[username];
   if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
-  if (!bcrypt.compareSync(password, user.password))
-    return res.status(401).json({ error: 'Senha incorreta' });
-  const token = jwt.sign(
-    { username, role: user.role, displayName: user.displayName },
-    JWT_SECRET, { expiresIn: '7d' }
-  );
+  if (!bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: 'Senha incorreta' });
+  const token = jwt.sign({ username, role: user.role, displayName: user.displayName }, JWT_SECRET, { expiresIn: '7d' });
   res.json({ token, role: user.role, displayName: user.displayName, username });
 });
 
-// Register player (master only via POST /api/users)
+app.post('/api/setup', (req, res) => {
+  const users = readDB('users');
+  if (Object.keys(users).length > 0) return res.status(403).json({ error: 'Setup já realizado' });
+  const { username, password, displayName } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Dados incompletos' });
+  users[username] = { username, password: bcrypt.hashSync(password, 10), displayName: displayName || username, role: 'master', createdAt: new Date().toISOString() };
+  writeDB('users', users);
+  res.json({ ok: true });
+});
+
+app.get('/api/setup', (req, res) => {
+  const users = readDB('users');
+  res.json({ needsSetup: Object.keys(users).length === 0 });
+});
+
+// ══════════════════════════════════════════════════════════════════
+// USER ROUTES
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/users', authMiddleware, masterOnly, (req, res) => {
+  const users = readDB('users');
+  res.json(Object.values(users).map(u => ({ username: u.username, displayName: u.displayName, role: u.role, createdAt: u.createdAt })));
+});
+
 app.post('/api/users', authMiddleware, masterOnly, (req, res) => {
   const { username, password, displayName, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username e senha obrigatórios' });
   const users = readDB('users');
   if (users[username]) return res.status(409).json({ error: 'Usuário já existe' });
-  users[username] = {
-    username,
-    password: bcrypt.hashSync(password, 10),
-    displayName: displayName || username,
-    role: role || 'player',
-    createdAt: new Date().toISOString()
-  };
+  users[username] = { username, password: bcrypt.hashSync(password, 10), displayName: displayName || username, role: role || 'player', createdAt: new Date().toISOString() };
   writeDB('users', users);
-  res.json({ ok: true, username });
+  res.json({ ok: true });
 });
 
-// List users (master only)
-app.get('/api/users', authMiddleware, masterOnly, (req, res) => {
-  const users = readDB('users');
-  const list = Object.values(users).map(u => ({
-    username: u.username, displayName: u.displayName,
-    role: u.role, createdAt: u.createdAt
-  }));
-  res.json(list);
-});
-
-// Delete user (master only)
 app.delete('/api/users/:username', authMiddleware, masterOnly, (req, res) => {
   const users = readDB('users');
   if (!users[req.params.username]) return res.status(404).json({ error: 'Não encontrado' });
@@ -115,402 +138,268 @@ app.delete('/api/users/:username', authMiddleware, masterOnly, (req, res) => {
   res.json({ ok: true });
 });
 
-// Change own password
-app.post('/api/change-password', authMiddleware, (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-  const users = readDB('users');
-  const user = users[req.user.username];
-  if (!bcrypt.compareSync(oldPassword, user.password))
-    return res.status(401).json({ error: 'Senha atual incorreta' });
-  user.password = bcrypt.hashSync(newPassword, 10);
-  writeDB('users', users);
+// ══════════════════════════════════════════════════════════════════
+// ROOM ROUTES
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/rooms', authMiddleware, (req, res) => {
+  const rooms = readDB('rooms');
+  // Add online count per room
+  const result = Object.values(rooms).map(r => ({
+    ...r,
+    online: Array.from(onlineUsers.values()).filter(u => u.roomId === r.id).length
+  }));
+  res.json(result);
+});
+
+app.post('/api/rooms', authMiddleware, masterOnly, (req, res) => {
+  const { name, description, icon, color } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nome obrigatório' });
+  const rooms = readDB('rooms');
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30) + '_' + Date.now().toString(36);
+  rooms[id] = { id, name, description: description || '', icon: icon || '🎲', color: color || '#c8f03a', createdAt: new Date().toISOString() };
+  writeDB('rooms', rooms);
+  res.json(rooms[id]);
+});
+
+app.delete('/api/rooms/:id', authMiddleware, masterOnly, (req, res) => {
+  const rooms = readDB('rooms');
+  const fixed = ['herois', 'defensores', 'kaitro'];
+  if (fixed.includes(req.params.id)) return res.status(403).json({ error: 'Sala padrão não pode ser removida' });
+  delete rooms[req.params.id];
+  writeDB('rooms', rooms);
   res.json({ ok: true });
-});
-
-// First-time setup: create master if no users exist
-app.post('/api/setup', (req, res) => {
-  const users = readDB('users');
-  if (Object.keys(users).length > 0)
-    return res.status(403).json({ error: 'Setup já realizado' });
-  const { username, password, displayName } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Dados incompletos' });
-  users[username] = {
-    username, password: bcrypt.hashSync(password, 10),
-    displayName: displayName || username,
-    role: 'master', createdAt: new Date().toISOString()
-  };
-  writeDB('users', users);
-  res.json({ ok: true, message: 'Mestre criado com sucesso!' });
-});
-
-// Check if setup is needed
-app.get('/api/setup', (req, res) => {
-  const users = readDB('users');
-  res.json({ needsSetup: Object.keys(users).length === 0 });
 });
 
 // ══════════════════════════════════════════════════════════════════
-// SHEET ROUTES
+// SHEET ROUTES (per room)
 // ══════════════════════════════════════════════════════════════════
-
-// Save sheet
-app.post('/api/sheets', authMiddleware, (req, res) => {
-  const sheets = readDB('sheets');
-  sheets[req.user.username] = {
-    ...req.body,
-    username: req.user.username,
-    updatedAt: new Date().toISOString()
-  };
-  writeDB('sheets', sheets);
+app.post('/api/rooms/:roomId/sheets', authMiddleware, (req, res) => {
+  const sheets = readRoomDB(req.params.roomId, 'sheets');
+  sheets[req.user.username] = { ...req.body, username: req.user.username, updatedAt: new Date().toISOString() };
+  writeRoomDB(req.params.roomId, 'sheets', sheets);
+  io.to(`room:${req.params.roomId}`).emit('sheet_updated', { username: req.user.username, sheet: sheets[req.user.username] });
+  emitUsersStatus(req.params.roomId);
   res.json({ ok: true });
 });
 
-// Get own sheet
-app.get('/api/sheets/me', authMiddleware, (req, res) => {
-  const sheets = readDB('sheets');
-  res.json(sheets[req.user.username] || null);
+app.get('/api/rooms/:roomId/sheets', authMiddleware, masterOnly, (req, res) => {
+  res.json(Object.values(readRoomDB(req.params.roomId, 'sheets')));
 });
 
-// Get all sheets (master)
-app.get('/api/sheets', authMiddleware, masterOnly, (req, res) => {
-  const sheets = readDB('sheets');
-  res.json(Object.values(sheets));
-});
-
-// Get specific player sheet (master)
-app.get('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
-  const sheets = readDB('sheets');
-  res.json(sheets[req.params.username] || null);
-});
-
-// Update sheet stats (master can update any, player only own)
-app.patch('/api/sheets/:username', authMiddleware, (req, res) => {
-  if (req.user.role !== 'master' && req.user.username !== req.params.username)
-    return res.status(403).json({ error: 'Sem permissão' });
-  const sheets = readDB('sheets');
-  if (!sheets[req.params.username]) return res.status(404).json({ error: 'Ficha não encontrada' });
-  sheets[req.params.username] = { ...sheets[req.params.username], ...req.body, updatedAt: new Date().toISOString() };
-  writeDB('sheets', sheets);
-  io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
+app.post('/api/rooms/:roomId/sheets/:username', authMiddleware, masterOnly, (req, res) => {
+  const sheets = readRoomDB(req.params.roomId, 'sheets');
+  sheets[req.params.username] = { ...req.body, username: req.params.username, updatedAt: new Date().toISOString() };
+  writeRoomDB(req.params.roomId, 'sheets', sheets);
+  io.to(`room:${req.params.roomId}`).emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
+  emitUsersStatus(req.params.roomId);
   res.json({ ok: true });
 });
 
-// Delete sheet (master only)
-app.delete('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
-  const sheets = readDB('sheets');
-  if (!sheets[req.params.username]) return res.status(404).json({ error: 'Ficha não encontrada' });
+app.delete('/api/rooms/:roomId/sheets/:username', authMiddleware, masterOnly, (req, res) => {
+  const sheets = readRoomDB(req.params.roomId, 'sheets');
   delete sheets[req.params.username];
-  writeDB('sheets', sheets);
-  io.to('session').emit('sheet_removed', { username: req.params.username });
-  res.json({ ok: true });
-});
-
-// Upload sheet for a specific player (master only)
-app.post('/api/sheets/:username', authMiddleware, masterOnly, (req, res) => {
-  const sheets = readDB('sheets');
-  sheets[req.params.username] = {
-    ...req.body,
-    username: req.params.username,
-    updatedAt: new Date().toISOString()
-  };
-  writeDB('sheets', sheets);
-  io.to('session').emit('sheet_updated', { username: req.params.username, sheet: sheets[req.params.username] });
-  // Refresh display names for all online users
-  emitUsersStatus();
+  writeRoomDB(req.params.roomId, 'sheets', sheets);
+  io.to(`room:${req.params.roomId}`).emit('sheet_removed', { username: req.params.username });
   res.json({ ok: true });
 });
 
 // ══════════════════════════════════════════════════════════════════
-// SESSION ROUTES
+// SESSION ROUTES (per room)
 // ══════════════════════════════════════════════════════════════════
-
-// Get current session info
-app.get('/api/session', authMiddleware, (req, res) => {
-  const sessions = readDB('sessions');
-  res.json(sessions.current || { active: false });
+app.get('/api/rooms/:roomId/session', authMiddleware, (req, res) => {
+  res.json(readRoomDB(req.params.roomId, 'session'));
 });
 
-// Create/update session (master)
-app.post('/api/session', authMiddleware, masterOnly, (req, res) => {
-  const sessions = readDB('sessions');
-  sessions.current = {
-    ...req.body,
-    id: sessions.current?.id || uuidv4(),
-    active: true,
-    startedAt: sessions.current?.startedAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  writeDB('sessions', sessions);
-  io.to('session').emit('session_updated', sessions.current);
-  res.json(sessions.current);
-});
-
-// Close session (master)
-app.delete('/api/session', authMiddleware, masterOnly, (req, res) => {
-  const sessions = readDB('sessions');
-  if (sessions.current) { sessions.current.active = false; sessions.current.endedAt = new Date().toISOString(); }
-  writeDB('sessions', sessions);
-  io.to('session').emit('session_closed');
-  res.json({ ok: true });
+app.post('/api/rooms/:roomId/session', authMiddleware, masterOnly, (req, res) => {
+  const session = { ...readRoomDB(req.params.roomId, 'session'), ...req.body, updatedAt: new Date().toISOString() };
+  writeRoomDB(req.params.roomId, 'session', session);
+  io.to(`room:${req.params.roomId}`).emit('session_updated', session);
+  res.json(session);
 });
 
 // ══════════════════════════════════════════════════════════════════
-// HISTORY ROUTES
+// HISTORY ROUTES (per room)
 // ══════════════════════════════════════════════════════════════════
-
-app.get('/api/history', authMiddleware, (req, res) => {
-  const history = readDB('history');
+app.get('/api/rooms/:roomId/history', authMiddleware, (req, res) => {
+  const history = readRoomDB(req.params.roomId, 'history');
   const msgs = Object.values(history).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  const limit = parseInt(req.query.limit) || 200;
-  res.json(msgs.slice(-limit));
+  res.json(msgs.slice(-(parseInt(req.query.limit) || 200)));
 });
 
 // ══════════════════════════════════════════════════════════════════
-// BACKUP / RESTORE ROUTES
+// BACKUP / RESTORE
 // ══════════════════════════════════════════════════════════════════
-
-// Full backup — returns all 4 JSON databases in one object
 app.get('/api/backup', authMiddleware, masterOnly, (req, res) => {
-  res.json({
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    users:    readDB('users'),
-    sheets:   readDB('sheets'),
-    sessions: readDB('sessions'),
-    history:  readDB('history')
+  const rooms = readDB('rooms');
+  const roomData = {};
+  Object.keys(rooms).forEach(id => {
+    roomData[id] = {
+      sheets:  readRoomDB(id, 'sheets'),
+      history: readRoomDB(id, 'history'),
+      session: readRoomDB(id, 'session'),
+    };
   });
+  res.json({ version: 2, exportedAt: new Date().toISOString(), users: readDB('users'), rooms, roomData });
 });
 
-// Full restore — receives backup object and overwrites all databases
 app.post('/api/restore', authMiddleware, masterOnly, (req, res) => {
-  const { users, sheets, sessions, history } = req.body;
-  if (!users || !sheets || !sessions || !history)
-    return res.status(400).json({ error: 'Backup incompleto — faltam campos obrigatórios' });
-  writeDB('users',    users);
-  writeDB('sheets',   sheets);
-  writeDB('sessions', sessions);
-  writeDB('history',  history);
-  // Notify all connected clients to reload
-  io.to('session').emit('server_restored');
-  res.json({ ok: true, restoredAt: new Date().toISOString() });
+  const { users, rooms, roomData } = req.body;
+  if (!users || !rooms) return res.status(400).json({ error: 'Backup incompleto' });
+  writeDB('users', users);
+  writeDB('rooms', rooms);
+  if (roomData) {
+    Object.entries(roomData).forEach(([id, data]) => {
+      if (data.sheets)  writeRoomDB(id, 'sheets',  data.sheets);
+      if (data.history) writeRoomDB(id, 'history', data.history);
+      if (data.session) writeRoomDB(id, 'session', data.session);
+    });
+  }
+  io.emit('server_restored');
+  res.json({ ok: true });
 });
 
 // ══════════════════════════════════════════════════════════════════
 // SOCKET.IO
 // ══════════════════════════════════════════════════════════════════
+const onlineUsers = new Map(); // socketId -> { username, displayName, role, roomId }
 
-// Online users map: socketId -> user info
-const onlineUsers = new Map();
+function emitUsersStatus(roomId) {
+  const roomUsers = Array.from(onlineUsers.values()).filter(u => u.roomId === roomId);
+  io.to(`room:${roomId}`).emit('users_online', roomUsers);
+  const users = readDB('users');
+  const onlineUsernames = new Set(roomUsers.map(u => u.username));
+  const statusList = Object.values(users).map(u => ({
+    username: u.username,
+    displayName: getAuthorLabel(u.username, u.displayName, roomId),
+    role: u.role,
+    online: onlineUsernames.has(u.username)
+  }));
+  io.to(`room:${roomId}`).emit('users_status', statusList);
+}
+
+function saveAndBroadcast(roomId, msg) {
+  const history = readRoomDB(roomId, 'history');
+  history[msg.id] = msg;
+  writeRoomDB(roomId, 'history', history);
+  io.to(`room:${roomId}`).emit('message', msg);
+}
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Token ausente'));
-  try {
-    socket.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch { next(new Error('Token inválido')); }
+  try { socket.user = jwt.verify(token, JWT_SECRET); next(); }
+  catch { next(new Error('Token inválido')); }
 });
 
 io.on('connection', (socket) => {
   const user = socket.user;
-  socket.join('session');
+  const roomId = socket.handshake.auth.roomId;
 
-  // Register online — use character name if sheet exists
-  const authorLabel = getAuthorLabel(user.username, user.displayName);
-  onlineUsers.set(socket.id, { username: user.username, displayName: authorLabel, role: user.role });
-  emitUsersStatus();
-
-  // Send recent history to new connection
-  const history = readDB('history');
-  const recent = Object.values(history)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .slice(-100);
-  socket.emit('history_load', recent);
-
-  // Send current sheets
-  const sheets = readDB('sheets');
-  socket.emit('sheets_load', Object.values(sheets));
-
-  // Send intro if set and user is a player
-  const sessions = readDB('sessions');
-  if (user.role !== 'master' && sessions.current?.intro) {
-    socket.emit('show_intro', { text: sessions.current.intro });
+  if (!roomId) {
+    // Lobby connection — just for room online counts
+    socket.join('lobby');
+    socket.on('disconnect', () => {
+      io.to('lobby').emit('rooms_updated');
+    });
+    return;
   }
 
-  console.log(`✅ ${authorLabel} (${user.role}) conectou`);
+  // Validate room exists
+  const rooms = readDB('rooms');
+  if (!rooms[roomId]) { socket.emit('error', 'Sala não encontrada'); socket.disconnect(); return; }
 
-  // ── NARRATIVE MESSAGE (master only) ──
-  socket.on('narrate', (data) => {
+  socket.join(`room:${roomId}`);
+  const authorLabel = getAuthorLabel(user.username, user.displayName, roomId);
+  onlineUsers.set(socket.id, { username: user.username, displayName: authorLabel, role: user.role, roomId });
+  emitUsersStatus(roomId);
+
+  // Send history
+  const history = readRoomDB(roomId, 'history');
+  const recent = Object.values(history).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)).slice(-100);
+  socket.emit('history_load', recent);
+
+  // Send sheets
+  socket.emit('sheets_load', Object.values(readRoomDB(roomId, 'sheets')));
+
+  // Send session/intro
+  const session = readRoomDB(roomId, 'session');
+  socket.emit('session_updated', session);
+  if (user.role !== 'master' && session.intro) socket.emit('show_intro', { text: session.intro });
+
+  console.log(`✅ ${authorLabel} entrou em [${roomId}]`);
+
+  socket.on('narrate', data => {
     if (user.role !== 'master') return;
-    const msg = {
-      id: uuidv4(), type: 'narrate',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      content: data.content,
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
+    saveAndBroadcast(roomId, { id: uuidv4(), type: 'narrate', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, content: data.content, timestamp: new Date().toISOString() });
   });
 
-  // ── PLAYER ACTION ──
-  socket.on('action', (data) => {
-    const msg = {
-      id: uuidv4(), type: 'action',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      role: user.role,
-      content: data.content,
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
+  socket.on('action', data => {
+    saveAndBroadcast(roomId, { id: uuidv4(), type: 'action', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, role: user.role, content: data.content, timestamp: new Date().toISOString() });
   });
 
-  // ── DICE ROLL ──
-  socket.on('roll', (data) => {
-    const d1 = Math.floor(Math.random() * 6) + 1;
-    const d2 = Math.floor(Math.random() * 6) + 1;
-    const attr = parseInt(data.attr) || 0;
-    const attrName = data.attrName || '';
-    const total = d1 + d2 + attr;
-    const isCritical = d1 === 6 && d2 === 6;
-    const isFumble = d1 === 1 && d2 === 1;
-    const msg = {
-      id: uuidv4(), type: 'roll',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      d1, d2, attr, attrName, total, isCritical, isFumble,
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
+  socket.on('roll', data => {
+    const d1 = Math.floor(Math.random()*6)+1, d2 = Math.floor(Math.random()*6)+1;
+    const attr = parseInt(data.attr)||0, attrName = data.attrName||'';
+    const total = d1+d2+attr;
+    saveAndBroadcast(roomId, { id: uuidv4(), type: 'roll', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, d1, d2, attr, attrName, total, isCritical: d1===6&&d2===6, isFumble: d1===1&&d2===1, timestamp: new Date().toISOString() });
   });
 
-  // ── CUSTOM ROLL ──
-  socket.on('roll_custom', (data) => {
-    const qty   = Math.min(parseInt(data.qty)||1, 20);
-    const faces = Math.min(parseInt(data.faces)||6, 1000);
-    const bonus = parseInt(data.bonus)||0;
-    const difficulty = parseInt(data.difficulty)||0;
-    const rolls = Array.from({length: qty}, () => Math.floor(Math.random() * faces) + 1);
-    const sum = rolls.reduce((a,b) => a+b, 0);
-    const total = sum + bonus;
-    const isCritical = qty === 2 && faces === 6 && rolls[0] === 6 && rolls[1] === 6;
-    const isFumble   = qty === 2 && faces === 6 && rolls[0] === 1 && rolls[1] === 1;
-    const msg = {
-      id: uuidv4(), type: 'roll_custom',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      qty, faces, bonus, rolls, total, difficulty, isCritical, isFumble,
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
+  socket.on('roll_custom', data => {
+    const qty = Math.min(parseInt(data.qty)||1, 20), faces = Math.min(parseInt(data.faces)||6, 1000), bonus = parseInt(data.bonus)||0, difficulty = parseInt(data.difficulty)||0;
+    const rolls = Array.from({length: qty}, () => Math.floor(Math.random()*faces)+1);
+    const total = rolls.reduce((a,b)=>a+b,0) + bonus;
+    saveAndBroadcast(roomId, { id: uuidv4(), type: 'roll_custom', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, qty, faces, bonus, rolls, total, difficulty, isCritical: qty===2&&faces===6&&rolls[0]===6&&rolls[1]===6, isFumble: qty===2&&faces===6&&rolls[0]===1&&rolls[1]===1, timestamp: new Date().toISOString() });
   });
 
-  // ── DIFFICULTY ──
-  socket.on('difficulty_set', (data) => {
+  socket.on('difficulty_set', data => {
     if (user.role !== 'master') return;
-    io.to('session').emit('difficulty_set', data);
+    const session = readRoomDB(roomId, 'session');
+    session.difficulty = data;
+    writeRoomDB(roomId, 'session', session);
+    io.to(`room:${roomId}`).emit('difficulty_set', data);
   });
 
-  // ── CHAT ──
-  socket.on('chat', (data) => {
-    const msg = {
-      id: uuidv4(), type: 'chat',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username, role: user.role,
-      content: data.content,
-      timestamp: new Date().toISOString()
-    };
-    // Chat NOT saved to history — only in session
-    io.to('session').emit('message', msg);
+  socket.on('chat', data => {
+    io.to(`room:${roomId}`).emit('message', { id: uuidv4(), type: 'chat', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, role: user.role, content: data.content, timestamp: new Date().toISOString() });
   });
 
-  // ── UPDATE SHEET STATS (VIT/VON in real time) ──
-  socket.on('update_stats', (data) => {
+  socket.on('image', data => {
+    if (user.role !== 'master') return;
+    if (!data.src || (data.src.startsWith('data:') && data.src.length > 5*1024*1024)) return;
+    saveAndBroadcast(roomId, { id: uuidv4(), type: 'image', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, src: data.src, caption: (data.caption||'').slice(0,200), timestamp: new Date().toISOString() });
+  });
+
+  socket.on('audio', data => {
+    if (!data.src || data.src.length > 4*1024*1024) return;
+    saveAndBroadcast(roomId, { id: uuidv4(), type: 'audio', author: getAuthorLabel(user.username, user.displayName, roomId), username: user.username, src: data.src, timestamp: new Date().toISOString() });
+  });
+
+  socket.on('update_stats', data => {
     const target = data.username;
     if (user.role !== 'master' && user.username !== target) return;
-    const sheets = readDB('sheets');
+    const sheets = readRoomDB(roomId, 'sheets');
     if (!sheets[target]) return;
     sheets[target] = { ...sheets[target], ...data.stats, updatedAt: new Date().toISOString() };
-    writeDB('sheets', sheets);
-    io.to('session').emit('sheet_updated', { username: target, sheet: sheets[target] });
-    emitUsersStatus();
+    writeRoomDB(roomId, 'sheets', sheets);
+    io.to(`room:${roomId}`).emit('sheet_updated', { username: target, sheet: sheets[target] });
+    emitUsersStatus(roomId);
   });
 
-  // ── AUDIO ──
-  socket.on('audio', (data) => {
-    if (!data.src) return;
-    if (typeof data.src === 'string' && data.src.length > 4 * 1024 * 1024) {
-      socket.emit('message', { type: 'system', content: '[ Áudio muito grande — grave menos de 60 segundos ]' });
-      return;
-    }
-    const msg = {
-      id: uuidv4(), type: 'audio',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      src: data.src,
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
-  });
-
-  // ── IMAGE (master only) ──
-  socket.on('image', (data) => {
-    if (user.role !== 'master') return;
-    if (!data.src) return;
-    if (typeof data.src === 'string' && data.src.startsWith('data:') && data.src.length > 5 * 1024 * 1024) return;
-    const msg = {
-      id: uuidv4(), type: 'image',
-      author: getAuthorLabel(user.username, user.displayName),
-      username: user.username,
-      src: data.src,
-      caption: (data.caption || '').slice(0, 200),
-      timestamp: new Date().toISOString()
-    };
-    saveAndBroadcast(msg);
-  });
-
-  // ── CLEAR LOG (master only) ──
   socket.on('clear_log', () => {
     if (user.role !== 'master') return;
-    writeDB('history', {});
-    io.to('session').emit('log_cleared', { by: getAuthorLabel(user.username, user.displayName) });
+    writeRoomDB(roomId, 'history', {});
+    io.to(`room:${roomId}`).emit('log_cleared', { by: getAuthorLabel(user.username, user.displayName, roomId) });
   });
 
-  // ── DISCONNECT ──
   socket.on('disconnect', () => {
     onlineUsers.delete(socket.id);
-    emitUsersStatus();
-    console.log(`❌ ${getAuthorLabel(user.username, user.displayName)} desconectou`);
+    emitUsersStatus(roomId);
+    io.to('lobby').emit('rooms_updated');
+    console.log(`❌ ${user.displayName} saiu de [${roomId}]`);
   });
 });
 
-function saveAndBroadcast(msg) {
-  const history = readDB('history');
-  history[msg.id] = msg;
-  writeDB('history', history);
-  io.to('session').emit('message', msg);
-}
-
-// Emits both users_online (connected only) and users_status (all users with online flag)
-function emitUsersStatus() {
-  const onlineList = Array.from(onlineUsers.values());
-  io.to('session').emit('users_online', onlineList);
-
-  // users_status: ALL registered users (including master) with online flag
-  const users = readDB('users');
-  const onlineUsernames = new Set(onlineList.map(u => u.username));
-  const statusList = Object.values(users).map(u => ({
-    username: u.username,
-    displayName: getAuthorLabel(u.username, u.displayName),
-    role: u.role,
-    online: onlineUsernames.has(u.username)
-  }));
-  io.to('session').emit('users_status', statusList);
-}
-
-// ── Start ────────────────────────────────────────────────────────
 server.listen(PORT, () => {
-  console.log(`\n🎮 Heróis Improváveis — Plataforma`);
-  console.log(`🌐 Rodando em http://localhost:${PORT}`);
-  console.log(`📁 Dados em: ${DATA_DIR}\n`);
+  console.log(`\n🎮 Plataforma Heróis Improváveis`);
+  console.log(`🌐 http://localhost:${PORT}\n`);
 });

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heróis Improváveis — Lobby</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--panel:#10101a;--card:#13131f;--border:#1e1e32;--border2:#2a2a44;--accent:#c8f03a;--accent2:#6b5fff;--accent3:#ff5f7e;--hp:#3affc8;--wp:#c87bff;--text:#cccce0;--muted:#55556a;--font-d:'Orbitron',monospace;--font-b:'Inter',sans-serif;--font-m:'Share Tech Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font-b);}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border2);}
+
+#header{background:var(--panel);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;}
+#header h1{font-family:var(--font-d);font-size:.85rem;letter-spacing:3px;color:var(--accent);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.user-label{font-family:var(--font-m);font-size:.7rem;color:var(--muted);}
+.btn{font-family:var(--font-d);font-size:.58rem;letter-spacing:1px;padding:7px 14px;border:1px solid;cursor:pointer;transition:.2s;background:transparent;text-transform:uppercase;}
+.btn-g{color:var(--accent);border-color:var(--accent);}.btn-g:hover{background:var(--accent);color:var(--bg);}
+.btn-b{color:var(--accent2);border-color:var(--accent2);}.btn-b:hover{background:var(--accent2);color:#fff;}
+.btn-r{color:var(--accent3);border-color:var(--accent3);}.btn-r:hover{background:var(--accent3);color:#fff;}
+.btn-m{color:var(--muted);border-color:var(--border2);}.btn-m:hover{color:var(--text);border-color:var(--text);}
+.btn.sm{padding:4px 10px;font-size:.52rem;}
+
+#content{max-width:860px;margin:0 auto;padding:32px 20px 60px;}
+h2{font-family:var(--font-d);font-size:.85rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+.subtitle{font-size:.72rem;color:var(--muted);margin-bottom:24px;}
+
+/* ROOM GRID */
+#room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:32px;}
+.room-card{background:var(--card);border:1px solid var(--border2);padding:20px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;}
+.room-card:hover{border-color:var(--accent2);transform:translateY(-2px);}
+.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--room-color,var(--accent));}
+.room-icon{font-size:2rem;margin-bottom:10px;display:block;}
+.room-name{font-family:var(--font-d);font-size:.8rem;letter-spacing:1px;color:var(--accent);margin-bottom:4px;}
+.room-desc{font-size:.68rem;color:var(--muted);line-height:1.5;margin-bottom:10px;}
+.room-footer{display:flex;align-items:center;justify-content:space-between;}
+.room-online{font-family:var(--font-m);font-size:.6rem;color:var(--hp);display:flex;align-items:center;gap:4px;}
+.room-online .dot{width:6px;height:6px;border-radius:50%;background:var(--hp);}
+.room-online.empty .dot{background:var(--muted);}
+.room-online.empty{color:var(--muted);}
+.room-enter{font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;color:var(--accent2);}
+.room-master-btns{display:flex;gap:4px;margin-top:8px;}
+
+/* NEW ROOM MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:500;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border2);padding:24px;width:400px;max-width:94vw;display:flex;flex-direction:column;gap:14px;}
+.modal-title{font-family:var(--font-d);font-size:.8rem;letter-spacing:2px;color:var(--accent);}
+.modal-close{float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;}
+.modal-close:hover{color:var(--accent3);}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-family:var(--font-d);font-size:.52rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.inp{background:var(--card);border:1px solid var(--border2);outline:none;color:var(--text);font-family:var(--font-b);font-size:.82rem;padding:8px 10px;width:100%;transition:.2s;}
+.inp:focus{border-color:var(--accent2);}
+.icon-row{display:flex;gap:8px;flex-wrap:wrap;}
+.icon-btn{font-size:1.3rem;width:38px;height:38px;border:1px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;}
+.icon-btn.sel{border-color:var(--accent);background:rgba(200,240,58,.1);}
+.color-row{display:flex;gap:8px;flex-wrap:wrap;}
+.color-swatch{width:28px;height:28px;border:2px solid transparent;cursor:pointer;border-radius:2px;}
+.color-swatch.sel{border-color:#fff;}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--accent);color:var(--accent);font-family:var(--font-m);font-size:.72rem;padding:8px 18px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+#toast.show{opacity:1;}
+
+/* MASTER SECTION */
+#master-section{border-top:1px solid var(--border2);padding-top:24px;margin-top:8px;}
+#master-section h3{font-family:var(--font-d);font-size:.65rem;letter-spacing:2px;color:var(--accent2);text-transform:uppercase;margin-bottom:12px;}
+
+/* MOBILE */
+@media(max-width:600px){
+  #content{padding:20px 12px 40px;}
+  #room-grid{grid-template-columns:1fr;}
+  .hdr-right .user-label{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>⚡ Heróis Improváveis</h1>
+  <div class="hdr-right">
+    <span class="user-label" id="user-label">—</span>
+    <button class="btn btn-m sm" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<div id="content">
+  <h2>Escolha uma Sala</h2>
+  <p class="subtitle">Selecione a campanha que deseja acessar. Cada sala tem seus próprios personagens e histórico.</p>
+  <div id="room-grid"></div>
+
+  <div id="master-section" style="display:none">
+    <h3>⚙️ Gerenciar Salas</h3>
+    <button class="btn btn-g" onclick="openNewRoomModal()">+ Nova Sala</button>
+  </div>
+</div>
+
+<!-- NEW ROOM MODAL -->
+<div class="modal-overlay" id="new-room-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="modal-title">🎲 Nova Sala</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field"><label>Nome da sala</label><input class="inp" id="nr-name" type="text" placeholder="Ex: A Lenda de Erdhart"/></div>
+    <div class="field"><label>Descrição</label><input class="inp" id="nr-desc" type="text" placeholder="Sistema e cenário"/></div>
+    <div class="field">
+      <label>Ícone</label>
+      <div class="icon-row" id="icon-row">
+        🎲 ⚡ ⚔️ 🛡️ ✨ 🏹 🗡️ 🌙 🔥 🌊 🐉 💀 🗺️ 👁️ 🎭
+      </div>
+    </div>
+    <div class="field">
+      <label>Cor</label>
+      <div class="color-row" id="color-row"></div>
+    </div>
+    <button class="btn btn-g" onclick="createRoom()">✓ Criar Sala</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const token = localStorage.getItem('hi_token');
+const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
+
+function logout() { localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user'); window.location.href = '/'; }
+if (!token || !me) window.location.href = '/';
+
+document.getElementById('user-label').textContent = me.displayName + (me.role === 'master' ? ' ✦' : '');
+if (me.role === 'master') document.getElementById('master-section').style.display = '';
+
+// Socket for live online counts
+const socket = io({ auth: { token } });
+socket.on('rooms_updated', loadRooms);
+
+const COLORS = ['#c8f03a','#3affc8','#c87bff','#ff5f7e','#6b5fff','#ffa500','#00bfff','#ff69b4'];
+const ICONS  = ['🎲','⚡','⚔️','🛡️','✨','🏹','🗡️','🌙','🔥','🌊','🐉','💀','🗺️','👁️','🎭'];
+let selIcon = '🎲', selColor = '#c8f03a';
+
+async function loadRooms() {
+  try {
+    const res = await fetch('/api/rooms', { headers: { Authorization: `Bearer ${token}` } });
+    const rooms = await res.json();
+    renderRooms(rooms);
+  } catch { toast('Erro ao carregar salas'); }
+}
+
+function renderRooms(rooms) {
+  const grid = document.getElementById('room-grid');
+  grid.innerHTML = '';
+  rooms.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.style.setProperty('--room-color', r.color || '#c8f03a');
+    const onlineCount = r.online || 0;
+    const isFixed = ['herois','defensores','kaitro'].includes(r.id);
+    card.innerHTML = `
+      <span class="room-icon">${r.icon || '🎲'}</span>
+      <div class="room-name">${r.name}</div>
+      <div class="room-desc">${r.description || ''}</div>
+      <div class="room-footer">
+        <div class="room-online ${onlineCount===0?'empty':''}">
+          <div class="dot"></div>${onlineCount > 0 ? `${onlineCount} online` : 'Vazia'}
+        </div>
+        <span class="room-enter">Entrar ▶</span>
+      </div>
+      ${me.role==='master' && !isFixed ? `
+      <div class="room-master-btns" onclick="event.stopPropagation()">
+        <button class="btn btn-r sm" onclick="deleteRoom('${r.id}','${r.name}')">✕ Remover</button>
+      </div>` : ''}`;
+    card.onclick = () => enterRoom(r.id, r.name);
+    grid.appendChild(card);
+  });
+}
+
+function enterRoom(roomId, roomName) {
+  localStorage.setItem('hi_room', roomId);
+  localStorage.setItem('hi_room_name', roomName);
+  window.location.href = me.role === 'master' ? '/master.html' : '/player.html';
+}
+
+// NEW ROOM MODAL
+function openNewRoomModal() {
+  selIcon = '🎲'; selColor = '#c8f03a';
+  document.getElementById('nr-name').value = '';
+  document.getElementById('nr-desc').value = '';
+  // Icons
+  const iconRow = document.getElementById('icon-row');
+  iconRow.innerHTML = '';
+  ICONS.forEach(ic => {
+    const btn = document.createElement('button');
+    btn.className = 'icon-btn' + (ic === selIcon ? ' sel' : '');
+    btn.textContent = ic;
+    btn.onclick = () => { selIcon = ic; document.querySelectorAll('.icon-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); };
+    iconRow.appendChild(btn);
+  });
+  // Colors
+  const colorRow = document.getElementById('color-row');
+  colorRow.innerHTML = '';
+  COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (c === selColor ? ' sel' : '');
+    sw.style.background = c;
+    sw.onclick = () => { selColor = c; document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('sel')); sw.classList.add('sel'); };
+    colorRow.appendChild(sw);
+  });
+  document.getElementById('new-room-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('new-room-modal').classList.remove('open'); }
+
+async function createRoom() {
+  const name = document.getElementById('nr-name').value.trim();
+  const description = document.getElementById('nr-desc').value.trim();
+  if (!name) { toast('Digite o nome da sala'); return; }
+  try {
+    const res = await fetch('/api/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name, description, icon: selIcon, color: selColor })
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    closeModal(); toast('✅ Sala criada!'); loadRooms();
+  } catch(e) { toast('Erro: ' + e.message); }
+}
+
+async function deleteRoom(id, name) {
+  if (!confirm(`Remover a sala "${name}"? O histórico será perdido.`)) return;
+  try {
+    await fetch(`/api/rooms/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    toast('Sala removida'); loadRooms();
+  } catch { toast('Erro ao remover'); }
+}
+
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+loadRooms();
+</script>
+</body>
+</html>

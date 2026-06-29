@@ -211,10 +211,11 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 <body>
 
 <div id="header">
-  <h1>⚡ Heróis Improváveis</h1>
+  <div><h1>⚡ Heróis Improváveis</h1><div id="room-label" style="font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:2px">—</div></div>
   <div class="header-right">
     <span class="online-dot"></span>
     <span class="user-name" id="user-label">—</span>
+    <a href="/lobby.html" class="btn btn-muted sm">🏠 Lobby</a>
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
     <button class="btn btn-muted sm" onclick="openSheetModal()">⬆ Enviar Ficha</button>
@@ -364,10 +365,14 @@ if (!token || !me || me.role === 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName;
+document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
+document.title = roomName + ' — Jogador';
 }
 
 // ── SOCKET ───────────────────────────────────────────────────────
-const socket = io({ auth: { token } });
+const roomId = localStorage.getItem('hi_room') || 'herois';
+const roomName = localStorage.getItem('hi_room_name') || 'Sala';
+const socket = io({ auth: { token, roomId } });
 let sheets = {}; // username -> sheet
 let pendingSheet = null;
 let activeDifficulty = null;
@@ -627,7 +632,7 @@ let mediaRecorder = null;
 let audioChunks = [];
 let recTimerInterval = null;
 let recSeconds = 0;
-const MAX_REC_SECONDS = 40;
+const MAX_REC_SECONDS = 60;
 
 async function startRecording() {
   if (mediaRecorder && mediaRecorder.state === 'recording') return;
@@ -916,7 +921,7 @@ function uploadSheet(e) {
 async function confirmUploadSheet() {
   if (!pendingSheet) return;
   try {
-    const res = await fetch('/api/sheets', {
+    const res = await fetch('/api/rooms/' + roomId + '/sheets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(pendingSheet)

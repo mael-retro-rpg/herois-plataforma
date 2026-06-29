@@ -241,10 +241,11 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 <div id="header">
   <div style="display:flex;align-items:center">
-    <h1>⚡ Heróis Improváveis</h1>
+    <div><h1>⚡ Heróis Improváveis</h1><div id="room-label" style="font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:2px">—</div></div>
     <span class="master-tag">MESTRE</span>
   </div>
   <div class="header-right">
+    <a href="/lobby.html" class="btn btn-muted sm">🏠 Lobby</a>
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
     <span style="font-family:var(--font-m);font-size:.68rem;color:var(--muted)" id="user-label">—</span>
@@ -493,6 +494,10 @@ if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
+document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
+document.title = roomName + ' — Mestre';
+document.title = 'Mestre — ' + roomName;
+document.getElementById('room-label').textContent = roomName;
 }
 
 // ── IMAGE TOOLS ───────────────────────────────────────────────────
@@ -605,7 +610,7 @@ function saveLog() {
 }
 
 function openIntroModal() {
-  fetch('/api/session', { headers: { 'Authorization': `Bearer ${token}` } })
+  fetch('/api/rooms/' + roomId + '/session', { headers: { 'Authorization': `Bearer ${token}` } })
     .then(r => r.json())
     .then(s => {
       document.getElementById('intro-text').value = s.intro || '';
@@ -620,7 +625,7 @@ async function saveIntro() {
   const text = document.getElementById('intro-text').value.trim();
   if (!text) { toast('Digite o texto de abertura'); return; }
   try {
-    const res = await fetch('/api/session', {
+    const res = await fetch('/api/rooms/' + roomId + '/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ intro: text })
@@ -634,7 +639,7 @@ async function saveIntro() {
 async function clearIntro() {
   if (!confirm('Remover a narração de abertura?')) return;
   try {
-    await fetch('/api/session', {
+    await fetch('/api/rooms/' + roomId + '/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ intro: '' })
@@ -646,7 +651,9 @@ async function clearIntro() {
 }
 
 // ── SOCKET ───────────────────────────────────────────────────────
-const socket = io({ auth: { token } });
+const roomId = localStorage.getItem('hi_room') || 'herois';
+const roomName = localStorage.getItem('hi_room_name') || 'Sala';
+const socket = io({ auth: { token, roomId } });
 let sheets = {};
 let activeDifficulty = null;
 
@@ -1003,7 +1010,7 @@ function openReplaceSheetModal(username) {
 async function removeSheet(username) {
   if (!confirm(`Remover a ficha de ${username}?`)) return;
   try {
-    const res = await fetch(`/api/sheets/${username}`, {
+    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -1035,7 +1042,7 @@ async function confirmAddSheet() {
   const username = addSheetTarget || document.getElementById('add-sheet-user')?.value.trim();
   if (!username) { toast('Digite o username do jogador'); return; }
   try {
-    const res = await fetch(`/api/sheets/${username}`, {
+    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(pendingAddSheet)
