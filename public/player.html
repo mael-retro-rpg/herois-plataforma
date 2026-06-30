@@ -453,6 +453,22 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 </div>
 
 <div id="toast"></div>
+
+<!-- DOCS PANEL (read-only para jogadores) -->
+<div id="docs-panel">
+  <div id="docs-panel-inner">
+    <div id="docs-panel-header">
+      <h2>📁 Documentos da Mesa</h2>
+      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem" onclick="closeDocsPanel()">✕</button>
+    </div>
+    <div id="docs-panel-body">
+      <div id="docs-panel-sidebar"></div>
+      <div id="docs-panel-content">
+        <div style="padding:20px;font-family:var(--font-m);font-size:.7rem;color:var(--muted)">Selecione um documento na lista.</div>
+      </div>
+    </div>
+  </div>
+</div>
 <button id="chat-toggle-btn" onclick="toggleMobileChat()" title="Chat">💬</button>
 
 <script src="/socket.io/socket.io.js"></script>

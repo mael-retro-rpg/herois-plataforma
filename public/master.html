@@ -402,6 +402,59 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   <!-- PLAYERS TAB -->
   <div id="tab-players"></div>
 
+
+  <!-- DOCS TAB -->
+  <div id="tab-docs">
+    <div id="docs-layout">
+      <div id="docs-sidebar">
+        <div id="docs-sidebar-header">
+          <span>📁 DOCUMENTOS</span>
+          <div style="display:flex;gap:4px">
+            <button class="doc-act-btn" onclick="newFolder()" title="Nova pasta" style="font-size:.8rem">📁+</button>
+            <button class="doc-act-btn" onclick="newDoc(null)" title="Novo documento" style="font-size:.8rem">📄+</button>
+          </div>
+        </div>
+        <div id="docs-tree"></div>
+      </div>
+      <div id="docs-main">
+        <div id="docs-toolbar">
+          <button class="md-btn" onclick="mdWrap('**','**')" title="Negrito">𝐁</button>
+          <button class="md-btn" onclick="mdWrap('*','*')" title="Itálico">𝐼</button>
+          <button class="md-btn" onclick="mdWrap('***','***')" title="Negrito+Itálico">𝑩𝑰</button>
+          <button class="md-btn" onclick="mdWrap('\`','\`')" title="Código">&lt;&gt;</button>
+          <div class="md-btn-sep"></div>
+          <button class="md-btn" onclick="mdLine('# ')" title="H1">H1</button>
+          <button class="md-btn" onclick="mdLine('## ')" title="H2">H2</button>
+          <button class="md-btn" onclick="mdLine('### ')" title="H3">H3</button>
+          <div class="md-btn-sep"></div>
+          <button class="md-btn" onclick="mdLine('- ')" title="Lista">•</button>
+          <button class="md-btn" onclick="mdLine('> ')" title="Citação">❝</button>
+          <button class="md-btn" onclick="mdInsert('\n---\n')" title="Separador">—</button>
+          <div class="md-btn-sep"></div>
+          <button class="md-btn" onclick="mdTable()" title="Tabela">⊞</button>
+          <div class="md-btn-sep"></div>
+          <button class="md-btn" style="color:var(--accent);border-color:var(--accent)" onclick="saveCurrentDoc()" title="Salvar (Ctrl+S)">💾</button>
+        </div>
+        <div id="docs-editor">
+          <input id="docs-title-inp" type="text" placeholder="Título do documento..." oninput="markUnsaved()"/>
+          <textarea id="docs-body-inp" placeholder="Conteúdo em Markdown..." oninput="markUnsaved()"></textarea>
+          <div id="docs-editor-footer">
+            <span id="docs-save-status">—</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-danger sm" onclick="deleteCurrentDoc()" style="font-size:.48rem;padding:3px 8px">🗑 Apagar</button>
+              <button class="btn btn-accent sm" onclick="saveCurrentDoc()" style="font-size:.48rem;padding:3px 8px">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+        <div id="docs-empty">
+          <div style="font-size:2.5rem;opacity:.3">📄</div>
+          <p style="font-family:var(--font-m);font-size:.7rem">Selecione um documento ou crie um novo</p>
+          <button class="btn btn-accent sm" onclick="newDoc(null)">+ Novo Documento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- USERS TAB -->
   <div id="tab-users">
     <div class="new-user-form">
