@@ -146,7 +146,21 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #chat-send { font-family: var(--font-d); font-size: .5rem; letter-spacing: 1px; padding: 4px 8px; border: 1px solid var(--accent2); background: transparent; color: var(--accent2); cursor: pointer; }
 #chat-send:hover { background: var(--accent2); color: #fff; }
 
-/* DOCS PANEL (read-only for players) */
+/* Modal overlay */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.78); display:none; align-items:center; justify-content:center; z-index:600; }
+.modal-overlay.open { display:flex; }
+/* Audio */
+.msg-audio { border-left:2px solid var(--wp); padding-left:10px; }
+.audio-author { font-family:var(--font-d); font-size:.55rem; color:var(--wp); margin-bottom:5px; }
+.audio-player { width:100%; max-width:340px; height:32px; outline:none; accent-color:var(--wp); }
+#rec-indicator { display:none; align-items:center; gap:8px; font-family:var(--font-m); font-size:.68rem; color:var(--accent3); padding:4px 10px; border:1px solid var(--accent3); background:rgba(255,95,126,.06); flex-shrink:0; }
+#rec-indicator.active { display:flex; }
+.rec-dot { width:8px; height:8px; border-radius:50%; background:var(--accent3); animation:blink 1s infinite; flex-shrink:0; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+#rec-timer { min-width:36px; }
+.rec-stop-btn { font-family:var(--font-d); font-size:.52rem; padding:3px 8px; border:1px solid var(--accent3); background:transparent; color:var(--accent3); cursor:pointer; margin-left:auto; }
+.rec-stop-btn:hover { background:var(--accent3); color:#fff; }
+/* Docs panel */
 #docs-panel { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:400; display:none; }
 #docs-panel.open { display:flex; }
 #docs-panel-inner { width:100%; max-width:860px; margin:auto; height:90vh; background:var(--panel); border:1px solid var(--border2); display:flex; flex-direction:column; overflow:hidden; }
@@ -156,26 +170,25 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #docs-panel-sidebar { width:200px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; padding:6px 0; }
 #docs-panel-content { flex:1; overflow-y:auto; padding:20px 24px; }
 .docs-panel-doc-title { font-family:var(--font-d); font-size:1rem; letter-spacing:1px; color:var(--accent); margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border2); }
-.docs-panel-body { font-family:var(--font-b); font-size:.82rem; line-height:1.75; color:var(--text); }
+.docs-panel-body { font-size:.82rem; line-height:1.75; color:var(--text); }
 .docs-panel-body h1 { font-family:var(--font-d); font-size:.95rem; color:var(--accent); letter-spacing:2px; margin:16px 0 8px; }
-.docs-panel-body h2 { font-family:var(--font-d); font-size:.8rem; color:var(--accent); letter-spacing:1px; margin:14px 0 6px; }
-.docs-panel-body h3 { font-family:var(--font-d); font-size:.68rem; color:var(--accent2); letter-spacing:1px; margin:12px 0 4px; }
-.docs-panel-body strong { color:var(--text); }
-.docs-panel-body em { color:var(--accent2); }
+.docs-panel-body h2 { font-family:var(--font-d); font-size:.8rem; color:var(--accent); margin:14px 0 6px; }
+.docs-panel-body h3 { font-family:var(--font-d); font-size:.68rem; color:var(--accent2); margin:12px 0 4px; }
 .docs-panel-body code { font-family:var(--font-m); font-size:.78rem; color:var(--accent2); background:rgba(107,95,255,.1); padding:1px 5px; }
 .docs-panel-body ul { padding-left:20px; margin:6px 0; }
 .docs-panel-body li { margin:3px 0; }
 .docs-panel-body hr { border:none; border-top:1px solid var(--border2); margin:12px 0; }
 .docs-panel-body blockquote { border-left:3px solid var(--accent2); padding-left:12px; color:var(--muted); margin:8px 0; }
 .docs-panel-body table { border-collapse:collapse; width:100%; margin:8px 0; }
-.docs-panel-body th { font-family:var(--font-d); font-size:.55rem; letter-spacing:1px; color:var(--muted); padding:6px 10px; border-bottom:1px solid var(--border2); text-align:left; }
+.docs-panel-body th { font-family:var(--font-d); font-size:.55rem; color:var(--muted); padding:6px 10px; border-bottom:1px solid var(--border2); text-align:left; }
 .docs-panel-body td { font-size:.78rem; padding:5px 10px; border-bottom:1px solid var(--border); }
 .docs-panel-item { padding:5px 12px; cursor:pointer; font-family:var(--font-m); font-size:.68rem; color:var(--text); border-left:2px solid transparent; transition:.15s; }
 .docs-panel-item:hover { background:rgba(200,240,58,.04); }
 .docs-panel-item.active { border-left-color:var(--accent); color:var(--accent); }
 .docs-panel-folder-label { padding:6px 12px; font-family:var(--font-d); font-size:.52rem; letter-spacing:1px; color:var(--accent2); }
-.docs-panel-empty { padding:20px; font-family:var(--font-m); font-size:.7rem; color:var(--muted); }
-@media(max-width:600px) { #docs-panel-sidebar { display:none; } #docs-panel-inner { height:100vh; border:none; } }
+@media(max-width:600px){ #docs-panel-sidebar{display:none;} #docs-panel-inner{height:100vh;border:none;} }
+/* Sheet upload modal */
+#sheet-modal .modal-box { gap: 12px; }
 .sheet-tab { flex:1; font-family:var(--font-d); font-size:.55rem; letter-spacing:1px; padding:7px; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--muted); cursor:pointer; transition:.2s; text-transform:uppercase; }
 .sheet-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 .sheet-tab:hover { color:var(--text); }
@@ -218,15 +231,39 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   color: var(--muted); cursor: pointer; transition: .2s;
 }
 .toggle-dice-btn:hover, .toggle-dice-btn.open { border-color: var(--accent2); color: var(--accent2); }
+/* ══ MOBILE ══ */
+@media (max-width: 700px) {
+  #header h1 { font-size:.65rem; letter-spacing:2px; }
+  .header-right { gap:4px; }
+  .header-right a, .header-right button { font-size:.46rem; padding:4px 5px; }
+  #main { flex-direction:column; overflow-y:auto; }
+  #hud { width:100%; border-right:none; border-bottom:1px solid var(--border); flex-direction:row; flex-wrap:wrap; gap:6px; padding:6px; overflow-y:visible; max-height:none; flex-shrink:0; }
+  .hud-sec { width:100%; padding:2px 4px; font-size:.44rem; }
+  #hud-chars { display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+  .hud-char { margin:0; flex:1; min-width:130px; }
+  #online-list { border-top:none; border-left:1px solid var(--border); padding:4px 8px; min-width:80px; margin-top:0; }
+  #narrative { flex:1; min-height:300px; }
+  #input-area { padding:6px 10px; }
+  .dice-row { gap:4px; flex-wrap:wrap; }
+  .attr-roll-btn, .free-roll-btn, .toggle-dice-btn { font-size:.46rem; padding:3px 6px; }
+  #difficulty-banner { font-size:.55rem; flex-wrap:wrap; gap:4px; padding:5px 10px; }
+  #chat-sidebar { display:none !important; position:fixed; bottom:0; left:0; right:0; z-index:300; width:100%; border-left:none; border-top:2px solid var(--accent2); height:260px; flex-direction:column; }
+  #chat-sidebar.mobile-open { display:flex !important; }
+  #chat-toggle-btn { display:flex !important; position:fixed; bottom:14px; right:14px; z-index:301; width:46px; height:46px; border-radius:50%; background:var(--accent2); border:2px solid rgba(255,255,255,.15); cursor:pointer; align-items:center; justify-content:center; font-size:1.2rem; box-shadow:0 3px 14px rgba(107,95,255,.5); transition:transform .15s; }
+  #chat-toggle-btn:active { transform:scale(.92); }
+  #sheet-popup-box { grid-template-columns:1fr; width:96vw; }
+}
+@media (min-width:701px) { #chat-toggle-btn { display:none !important; } }
 </style>
 </head>
 <body>
 
 <div id="header">
-  <h1>⚡ Heróis Improváveis</h1>
+  <div><h1>⚡ Heróis Improváveis</h1><div id="room-label" style="font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:2px">—</div></div>
   <div class="header-right">
     <span class="online-dot"></span>
     <span class="user-name" id="user-label">—</span>
+    <a href="/lobby.html" class="btn btn-muted sm">🏠 Lobby</a>
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <button class="btn btn-muted sm" onclick="openDocsPanel()">📁 Docs</button>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
@@ -274,7 +311,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         <div id="attr-btns"></div>
         <button class="free-roll-btn" onclick="rollFree()">2d6</button>
         <button class="toggle-dice-btn" id="toggle-dice-btn" onclick="toggleDicePanel()">+ dados ▾</button>
+        <button class="free-roll-btn" onclick="startRecording()" id="rec-btn" style="border-color:var(--wp);color:var(--wp)" title="Gravar">🎙</button>
       </div>
+      <div id="rec-indicator"><div class="rec-dot"></div><span>Gravando</span><span id="rec-timer">0:00</span><button class="rec-stop-btn" onclick="stopRecording()">■ Parar</button></div>
       <div class="input-row">
         <span style="font-family:var(--font-m);color:var(--accent);font-size:.9rem;flex-shrink:0">&gt;</span>
         <textarea id="action-input" placeholder="Descreva sua ação..." rows="1"></textarea>
@@ -414,31 +453,19 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 </div>
 
 <div id="toast"></div>
-
-<!-- DOCS PANEL (read-only) -->
-<div id="docs-panel">
-  <div id="docs-panel-inner">
-    <div id="docs-panel-header">
-      <h2>📁 Documentos da Mesa</h2>
-      <button class="modal-close" onclick="closeDocsPanel()">✕</button>
-    </div>
-    <div id="docs-panel-body">
-      <div id="docs-panel-sidebar"></div>
-      <div id="docs-panel-content">
-        <div class="docs-panel-empty">Selecione um documento na lista.</div>
-      </div>
-    </div>
-  </div>
-</div>
+<button id="chat-toggle-btn" onclick="toggleMobileChat()" title="Chat">💬</button>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
+const roomId = localStorage.getItem('hi_room') || 'herois';
+const roomName = localStorage.getItem('hi_room_name') || 'Heróis Improváveis';
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
+  localStorage.removeItem('hi_room'); localStorage.removeItem('hi_room_name');
   window.location.href = '/';
 }
 
@@ -446,10 +473,12 @@ if (!token || !me || me.role === 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName;
+  document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
+  document.title = roomName + ' — Jogador';
 }
 
 // ── SOCKET ───────────────────────────────────────────────────────
-const socket = io({ auth: { token } });
+const socket = io({ auth: { token, roomId } });
 let sheets = {}; // username -> sheet
 let pendingSheet = null;
 let activeDifficulty = null;
@@ -502,6 +531,7 @@ socket.on('log_cleared', data => {
   document.getElementById('log').innerHTML = `<div class="msg msg-system">[ Log limpo por ${data?.by || 'Mestre'} ]</div>`;
 });
 
+socket.on('docs_updated', function(db){ playerDocsDB=db; if(document.getElementById('docs-panel').classList.contains('open')) renderDocsPanel(); });
 socket.on('show_intro', ({ text }) => {
   document.getElementById('intro-popup-body').innerHTML = mdToHtml(text);
   document.getElementById('intro-popup').style.display = 'flex';
@@ -810,6 +840,9 @@ function renderMessage(msg) {
     el.innerHTML = `
       <div class="roll-author">${msg.author} rolou ${diceLabel}</div>
       ${rollBody}${tag}${diffResult}`;
+  } else if (msg.type === 'audio') {
+    el.className = 'msg msg-audio';
+    el.innerHTML = `<div class="audio-author">🎙 ${msg.author}</div><audio class="audio-player" controls preload="none" src="${msg.src}"></audio>`;
   } else if (msg.type === 'system') {
     el.className = 'msg msg-system';
     el.textContent = msg.content;
@@ -1040,111 +1073,76 @@ async function confirmSimpleSheet() {
   } catch { toast('Erro ao enviar ficha'); }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// DOCS (read-only viewer for players)
-// ══════════════════════════════════════════════════════════════════
-let playerDocsDB = { folders: {}, docs: {} };
 
-socket.on('docs_updated', db => { playerDocsDB = db; if (document.getElementById('docs-panel').classList.contains('open')) renderDocsPanel(); });
-
-async function openDocsPanel() {
-  try {
-    const res = await fetch(`/api/rooms/${roomId}/docs`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) playerDocsDB = await res.json();
-  } catch {}
+let playerDocsDB={folders:{},docs:{}};
+async function openDocsPanel(){
+  try{const res=await fetch('/api/rooms/'+roomId+'/docs',{headers:{Authorization:'Bearer '+token}});if(res.ok)playerDocsDB=await res.json();}catch{}
   renderDocsPanel();
   document.getElementById('docs-panel').classList.add('open');
 }
-
-function closeDocsPanel() { document.getElementById('docs-panel').classList.remove('open'); }
-
-function renderDocsPanel() {
-  const sidebar = document.getElementById('docs-panel-sidebar');
-  const { folders = {}, docs = {} } = playerDocsDB;
-  sidebar.innerHTML = '';
-  const allDocs = Object.values(docs);
-  if (!allDocs.length) { sidebar.innerHTML = '<div class="docs-panel-empty">Nenhum documento ainda.</div>'; return; }
-
-  // Root docs
-  allDocs.filter(d => !d.folderId).sort((a,b) => (a.title||'').localeCompare(b.title||'')).forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'docs-panel-item';
-    el.textContent = '📄 ' + (d.title || 'Sem título');
-    el.onclick = () => openPanelDoc(d.id);
-    sidebar.appendChild(el);
+function closeDocsPanel(){document.getElementById('docs-panel').classList.remove('open');}
+function renderDocsPanel(){
+  const sidebar=document.getElementById('docs-panel-sidebar');
+  const folders=playerDocsDB.folders||{}, docs=playerDocsDB.docs||{};
+  sidebar.innerHTML='';
+  const allDocs=Object.values(docs);
+  if(!allDocs.length){sidebar.innerHTML='<div style="padding:12px;font-family:var(--font-m);font-size:.7rem;color:var(--muted)">Nenhum documento ainda.</div>';return;}
+  allDocs.filter(d=>!d.folderId).sort((a,b)=>(a.title||'').localeCompare(b.title||'')).forEach(d=>{
+    const el=document.createElement('div');el.className='docs-panel-item';
+    el.textContent='📄 '+(d.title||'Sem título');el.onclick=()=>openPanelDoc(d.id);sidebar.appendChild(el);
   });
-
-  // Folders
-  Object.values(folders).sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
-    const label = document.createElement('div');
-    label.className = 'docs-panel-folder-label';
-    label.textContent = '📁 ' + f.name;
-    sidebar.appendChild(label);
-    allDocs.filter(d => d.folderId === f.id).sort((a,b) => (a.title||'').localeCompare(b.title||'')).forEach(d => {
-      const el = document.createElement('div');
-      el.className = 'docs-panel-item';
-      el.style.paddingLeft = '20px';
-      el.textContent = '📄 ' + (d.title || 'Sem título');
-      el.onclick = () => openPanelDoc(d.id);
-      sidebar.appendChild(el);
+  Object.values(folders).sort((a,b)=>a.name.localeCompare(b.name)).forEach(f=>{
+    const label=document.createElement('div');label.className='docs-panel-folder-label';label.textContent='📁 '+f.name;sidebar.appendChild(label);
+    allDocs.filter(d=>d.folderId===f.id).sort((a,b)=>(a.title||'').localeCompare(b.title||'')).forEach(d=>{
+      const el=document.createElement('div');el.className='docs-panel-item';el.style.paddingLeft='20px';
+      el.textContent='📄 '+(d.title||'Sem título');el.onclick=()=>openPanelDoc(d.id);sidebar.appendChild(el);
     });
   });
 }
-
-function openPanelDoc(id) {
-  const doc = playerDocsDB.docs[id]; if (!doc) return;
-  document.querySelectorAll('.docs-panel-item').forEach(el => el.classList.remove('active'));
-  document.querySelector(`[onclick="openPanelDoc('${id}')"]`)?.classList.add('active');
-  const content = document.getElementById('docs-panel-content');
-  content.innerHTML = `
-    <div class="docs-panel-doc-title">${esc(doc.title || 'Sem título')}</div>
-    <div class="docs-panel-body">${mdToHtmlFull(doc.body || '')}</div>`;
+function openPanelDoc(id){
+  const doc=playerDocsDB.docs[id];if(!doc)return;
+  document.querySelectorAll('.docs-panel-item').forEach(el=>el.classList.remove('active'));
+  const rendered=mdFull(doc.body||'');
+  document.getElementById('docs-panel-content').innerHTML='<div class="docs-panel-doc-title">'+escDoc(doc.title||'Sem título')+'</div><div class="docs-panel-body">'+rendered+'</div>';
 }
-
-function mdToHtmlFull(md) {
-  const lines = esc(md).split('\n');
-  let out = '', inList = false, inTable = false, tableRows = [];
-  function flushList(){ if(inList){out+='</ul>';inList=false;} }
-  function flushTable(){
-    if(!inTable) return;
+function escDoc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mdFull(md){
+  const lines=escDoc(md).split("\n");let out='',inList=false,inTable=false,tableRows=[];
+  function fl(){if(inList){out+='</ul>';inList=false;}}
+  function ft(){
+    if(!inTable)return;
     if(tableRows.length>=2){
-      const header = tableRows[0].split('|').filter((_,i,a)=>i>0&&i<a.length-1);
-      const body   = tableRows.slice(2);
-      out += '<table><thead><tr>' + header.map(h=>`<th>${inlineMdFull(h.trim())}</th>`).join('') + '</tr></thead><tbody>';
-      body.forEach(row => {
-        const cells = row.split('|').filter((_,i,a)=>i>0&&i<a.length-1);
-        out += '<tr>' + cells.map(c=>`<td>${inlineMdFull(c.trim())}</td>`).join('') + '</tr>';
-      });
-      out += '</tbody></table>';
+      const h=tableRows[0].split('|').filter((_,i,a)=>i>0&&i<a.length-1);
+      const b=tableRows.slice(2);
+      out+='<table><thead><tr>'+h.map(c=>'<th>'+im(c.trim())+'</th>').join('')+'</tr></thead><tbody>';
+      b.forEach(r=>{const cs=r.split('|').filter((_,i,a)=>i>0&&i<a.length-1);out+='<tr>'+cs.map(c=>'<td>'+im(c.trim())+'</td>').join('')+'</tr>';});
+      out+='</tbody></table>';
     }
-    inTable=false; tableRows=[];
+    inTable=false;tableRows=[];
+  }
+  function im(s){
+    return String(s)
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+      .replace(/[*]{3}([^*]+)[*]{3}/g,'<strong><em>$1</em></strong>')
+      .replace(/[*]{2}([^*]+)[*]{2}/g,'<strong>$1</strong>')
+      .replace(/[*]([^*]+)[*]/g,'<em>$1</em>')
+      .replace(/__([^_]+)__/g,'<strong>$1</strong>')
+      .replace(/_([^_]+)_/g,'<em>$1</em>');
   }
   for(const line of lines){
-    if(/^\|.+\|/.test(line)){ flushList(); if(!inTable) inTable=true; tableRows.push(line); continue; }
-    else if(inTable) flushTable();
-    if(/^-{3,}$/.test(line.trim())){ flushList(); out+='<hr>'; }
-    else if(/^###\s+/.test(line)){ flushList(); out+=`<h3>${inlineMdFull(line.replace(/^###\s+/,''))}</h3>`; }
-    else if(/^##\s+/.test(line)){ flushList(); out+=`<h2>${inlineMdFull(line.replace(/^##\s+/,''))}</h2>`; }
-    else if(/^#\s+/.test(line)){ flushList(); out+=`<h1>${inlineMdFull(line.replace(/^#\s+/,''))}</h1>`; }
-    else if(/^[-*]\s+/.test(line)){ if(!inList){out+='<ul>';inList=true;} out+=`<li>${inlineMdFull(line.replace(/^[-*]\s+/,''))}</li>`; }
-    else if(/^&gt;\s?/.test(line)){ flushList(); out+=`<blockquote>${inlineMdFull(line.replace(/^&gt;\s?/,''))}</blockquote>`; }
-    else if(line.trim()==='') { flushList(); out+='<br>'; }
-    else { flushList(); out+=`<p>${inlineMdFull(line)}</p>`; }
+    if(/^\|.+\|/.test(line)){fl();if(!inTable)inTable=true;tableRows.push(line);continue;}
+    else if(inTable)ft();
+    if(/^-{3,}$/.test(line.trim())){fl();out+='<hr>';}
+    else if(/^###\s+/.test(line)){fl();out+='<h3>'+im(line.replace(/^###\s+/,''))+'</h3>';}
+    else if(/^##\s+/.test(line)){fl();out+='<h2>'+im(line.replace(/^##\s+/,''))+'</h2>';}
+    else if(/^#\s+/.test(line)){fl();out+='<h1>'+im(line.replace(/^#\s+/,''))+'</h1>';}
+    else if(/^[-*]\s+/.test(line)){if(!inList){out+='<ul>';inList=true;}out+='<li>'+im(line.replace(/^[-*]\s+/,''))+'</li>';}
+    else if(/^&gt;\s?/.test(line)){fl();out+='<blockquote>'+im(line.replace(/^&gt;\s?/,''))+'</blockquote>';}
+    else if(line.trim()===''){fl();out+='<br>';}
+    else{fl();out+='<p>'+im(line)+'</p>';}
   }
-  flushList(); flushTable();
-  return out;
+  fl();ft();return out;
 }
-function inlineMdFull(s){
-  return String(s)
-    .replace(/`([^`]+)`/g,'<code>$1</code>')
-    .replace(/\*\*\*([^*]+)\*\*\*/g,'<strong><em>$1</em></strong>')
-    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
-    .replace(/__([^_]+)__/g,'<strong>$1</strong>')
-    .replace(/_([^_]+)_/g,'<em>$1</em>');
-}
-
-function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function toast(msg, dur=2500) {
   const el = document.getElementById('toast');
