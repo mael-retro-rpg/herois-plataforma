@@ -148,6 +148,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* Sheet upload modal */
 #sheet-modal .modal-box { gap: 12px; }
+.sheet-tab { flex:1; font-family:var(--font-d); font-size:.55rem; letter-spacing:1px; padding:7px; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--muted); cursor:pointer; transition:.2s; text-transform:uppercase; }
+.sheet-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.sheet-tab:hover { color:var(--text); }
 
 /* DIFFICULTY BANNER */
 #difficulty-banner {
@@ -192,11 +195,10 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 <body>
 
 <div id="header">
-  <div><h1>⚡ Heróis Improváveis</h1><div id="room-label" style="font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:2px">—</div></div>
+  <h1>⚡ Heróis Improváveis</h1>
   <div class="header-right">
     <span class="online-dot"></span>
     <span class="user-name" id="user-label">—</span>
-    <a href="/lobby.html" class="btn btn-muted sm">🏠 Lobby</a>
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
     <button class="btn btn-muted sm" onclick="openSheetModal()">⬆ Enviar Ficha</button>
@@ -276,21 +278,81 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 <!-- SHEET UPLOAD MODAL -->
 <div class="modal-overlay" id="sheet-modal">
-  <div class="modal-box">
+  <div class="modal-box" style="width:420px;max-width:96vw">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div class="modal-title">📄 Minha Ficha</div>
       <button class="modal-close" onclick="closeModal('sheet-modal')">✕</button>
     </div>
-    <p style="font-size:.75rem;color:var(--muted);line-height:1.6">
-      Carregue o arquivo JSON salvo na ficha de personagem. Os dados serão sincronizados com todos os jogadores.
-    </p>
-    <div id="sheet-status" style="font-family:var(--font-m);font-size:.7rem;color:var(--muted)">Nenhuma ficha carregada.</div>
-    <button class="btn btn-accent full" onclick="document.getElementById('sheet-file').click()">📂 Carregar JSON da Ficha</button>
-    <input type="file" id="sheet-file" accept=".json" style="display:none" onchange="uploadSheet(event)"/>
-    <div id="sheet-preview" style="display:none">
-      <div style="font-family:var(--font-d);font-size:.6rem;color:var(--accent);margin-bottom:6px">PRÉVIA</div>
-      <div id="sheet-preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8"></div>
-      <button class="btn btn-accent full" onclick="confirmUploadSheet()">✓ Confirmar e Enviar</button>
+    <div style="display:flex;border-bottom:1px solid var(--border2);margin-bottom:4px">
+      <button class="sheet-tab active" id="stab-json" onclick="switchSheetTab('json')">📂 Carregar JSON</button>
+      <button class="sheet-tab" id="stab-simple" onclick="switchSheetTab('simple')">✏️ Criar Ficha</button>
+    </div>
+    <!-- TAB JSON -->
+    <div id="stab-content-json">
+      <p style="font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:8px">Carregue o arquivo JSON salvo na ficha de personagem.</p>
+      <div id="sheet-status" style="font-family:var(--font-m);font-size:.7rem;color:var(--muted);margin-bottom:8px">Nenhuma ficha carregada.</div>
+      <button class="btn btn-accent full" onclick="document.getElementById('sheet-file').click()">📂 Carregar JSON da Ficha</button>
+      <input type="file" id="sheet-file" accept=".json" style="display:none" onchange="uploadSheet(event)"/>
+      <div id="sheet-preview" style="display:none;margin-top:8px">
+        <div style="font-family:var(--font-d);font-size:.6rem;color:var(--accent);margin-bottom:6px">PRÉVIA</div>
+        <div id="sheet-preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8"></div>
+        <button class="btn btn-accent full" onclick="confirmUploadSheet()">✓ Confirmar e Enviar</button>
+      </div>
+    </div>
+    <!-- TAB CRIAR FICHA -->
+    <div id="stab-content-simple" style="display:none;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div onclick="document.getElementById('ss-avatar-inp').click()"
+          style="width:72px;height:72px;border:1px solid var(--border2);cursor:pointer;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;overflow:hidden;position:relative">
+          <span id="ss-avatar-placeholder">👤</span>
+          <img id="ss-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;object-position:top;position:absolute;inset:0"/>
+        </div>
+        <input type="file" id="ss-avatar-inp" accept="image/*" style="display:none" onchange="ssLoadAvatar(event)"/>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <div><label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:3px">NOME</label>
+            <input class="inp" id="ss-name" type="text" placeholder="Nome do personagem" style="font-size:.78rem;padding:5px 8px"/></div>
+          <div><label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:3px">CLASSE / TIPO</label>
+            <input class="inp" id="ss-cls" type="text" placeholder="Ex: Guerreiro / O Lutador" style="font-size:.78rem;padding:5px 8px"/></div>
+        </div>
+      </div>
+      <div>
+        <label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase">Atributos</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          <div style="background:var(--card);border:1px solid rgba(255,95,126,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">ATQ</div>
+            <input id="ss-atq" type="number" min="0" max="20" value="3" oninput="ssRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+          <div style="background:var(--card);border:1px solid rgba(58,255,200,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">RES</div>
+            <input id="ss-res" type="number" min="0" max="20" value="3" oninput="ssRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+          <div style="background:var(--card);border:1px solid rgba(200,123,255,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">SAB</div>
+            <input id="ss-sab" type="number" min="0" max="20" value="3" oninput="ssRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+          <div style="background:var(--card);border:1px solid rgba(107,95,255,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">AGI</div>
+            <input id="ss-agi" type="number" min="0" max="20" value="3" oninput="ssRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="background:var(--card);border:1px solid var(--border2);padding:6px;text-align:center">
+          <div style="font-size:.48rem;color:var(--muted);margin-bottom:2px">VITALIDADE</div>
+          <div id="ss-vit" style="font-family:var(--font-d);font-size:1rem;color:var(--hp)">11</div>
+          <div style="font-size:.48rem;color:var(--border2)">10 + (RES÷2)</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border2);padding:6px;text-align:center">
+          <div style="font-size:.48rem;color:var(--muted);margin-bottom:2px">VONTADE</div>
+          <div id="ss-von" style="font-family:var(--font-d);font-size:1rem;color:var(--wp)">11</div>
+          <div style="font-size:.48rem;color:var(--border2)">10 + (SAB÷2)</div>
+        </div>
+      </div>
+      <div>
+        <label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:4px">PODERES / HABILIDADES</label>
+        <textarea class="inp" id="ss-powers" rows="2" placeholder="Ex: Ataque Mágico 2&#10;Escudo Mágico 2" style="font-size:.75rem;resize:none"></textarea>
+      </div>
+      <button class="btn btn-accent full" onclick="confirmSimpleSheet()">✓ Enviar Ficha</button>
     </div>
   </div>
 </div>
@@ -329,12 +391,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
-const roomId = localStorage.getItem('hi_room') || 'herois';
-const roomName = localStorage.getItem('hi_room_name') || 'Heróis Improváveis';
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
-  localStorage.removeItem('hi_room'); localStorage.removeItem('hi_room_name');
   window.location.href = '/';
 }
 
@@ -342,12 +401,10 @@ if (!token || !me || me.role === 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName;
-  document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
-  document.title = roomName + ' — Jogador';
 }
 
 // ── SOCKET ───────────────────────────────────────────────────────
-const socket = io({ auth: { token, roomId } });
+const socket = io({ auth: { token } });
 let sheets = {}; // username -> sheet
 let pendingSheet = null;
 let activeDifficulty = null;
@@ -843,7 +900,7 @@ function uploadSheet(e) {
 async function confirmUploadSheet() {
   if (!pendingSheet) return;
   try {
-    const res = await fetch('/api/rooms/' + roomId + '/sheets', {
+    const res = await fetch('/api/sheets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(pendingSheet)
@@ -876,6 +933,68 @@ document.getElementById('chat-inp').addEventListener('keydown', e => {
 });
 
 // ── TOAST ─────────────────────────────────────────────────────────
+// ── SHEET TABS ───────────────────────────────────────────────────
+function switchSheetTab(tab) {
+  document.getElementById('stab-content-json').style.display   = tab==='json'   ? '' : 'none';
+  document.getElementById('stab-content-simple').style.display = tab==='simple' ? 'flex' : 'none';
+  document.getElementById('stab-json').classList.toggle('active', tab==='json');
+  document.getElementById('stab-simple').classList.toggle('active', tab==='simple');
+}
+
+// ── SIMPLE SHEET ─────────────────────────────────────────────────
+let ssAvatarBase64 = '';
+
+function ssLoadAvatar(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    ssAvatarBase64 = ev.target.result;
+    document.getElementById('ss-avatar-img').src = ev.target.result;
+    document.getElementById('ss-avatar-img').style.display = 'block';
+    document.getElementById('ss-avatar-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function ssRecalc() {
+  const res = parseInt(document.getElementById('ss-res').value)||0;
+  const sab = parseInt(document.getElementById('ss-sab').value)||0;
+  document.getElementById('ss-vit').textContent = 10 + Math.floor(res/2);
+  document.getElementById('ss-von').textContent = 10 + Math.floor(sab/2);
+}
+
+async function confirmSimpleSheet() {
+  const name = document.getElementById('ss-name').value.trim();
+  if (!name) { toast('Digite o nome do personagem'); return; }
+  const atq = parseInt(document.getElementById('ss-atq').value)||0;
+  const res = parseInt(document.getElementById('ss-res').value)||0;
+  const sab = parseInt(document.getElementById('ss-sab').value)||0;
+  const agi = parseInt(document.getElementById('ss-agi').value)||0;
+  const vit = 10 + Math.floor(res/2);
+  const von = 10 + Math.floor(sab/2);
+  const clsRaw = document.getElementById('ss-cls').value.trim();
+  const [cls, type] = clsRaw.includes('/') ? clsRaw.split('/').map(s=>s.trim()) : [clsRaw, ''];
+  const powers = document.getElementById('ss-powers').value.trim().split('\n').filter(Boolean);
+  const sheet = {
+    name, cls: cls||'—', type: type||'—',
+    atq, res, sab, agi, vit, vontade: von,
+    power1: powers[0]||'', power2: powers[1]||'', power3: powers[2]||'',
+    avatar: ssAvatarBase64||'', simpleSheet: true,
+  };
+  try {
+    const roomId = localStorage.getItem('hi_room') || 'herois';
+    const r = await fetch('/api/rooms/' + roomId + '/sheets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(sheet)
+    });
+    if (!r.ok) throw new Error();
+    toast('✅ Ficha enviada!');
+    closeModal('sheet-modal');
+    ssAvatarBase64 = '';
+  } catch { toast('Erro ao enviar ficha'); }
+}
+
 function toast(msg, dur=2500) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');

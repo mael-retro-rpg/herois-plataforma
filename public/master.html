@@ -191,6 +191,11 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 /* POPUP */
 #sheet-popup { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:500; align-items:center; justify-content:center; }
 #sheet-popup.open { display:flex; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.78); display:none; align-items:center; justify-content:center; z-index:600; }
+.modal-overlay.open { display:flex; }
+.sheet-tab { flex:1; font-family:var(--font-d); font-size:.55rem; letter-spacing:1px; padding:7px; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--muted); cursor:pointer; transition:.2s; text-transform:uppercase; }
+.sheet-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.sheet-tab:hover { color:var(--text); }
 #sheet-popup-box {
   background: var(--panel); border: 1px solid var(--border2);
   width: 520px; max-height: 88vh; overflow-y: auto; position: relative;
@@ -217,11 +222,10 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 <div id="header">
   <div style="display:flex;align-items:center">
-    <div><h1>⚡ Heróis Improváveis</h1><div id="room-label" style="font-family:var(--font-m);font-size:.6rem;color:var(--accent2);margin-top:2px">—</div></div>
+    <h1>⚡ Heróis Improváveis</h1>
     <span class="master-tag">MESTRE</span>
   </div>
   <div class="header-right">
-    <a href="/lobby.html" class="btn btn-muted sm">🏠 Lobby</a>
     <a href="/fastplay_4c.html" target="_blank" class="btn btn-muted sm">📖 Manual</a>
     <a href="/ficha_herois.html" target="_blank" class="btn btn-muted sm">📄 Ficha</a>
     <span style="font-family:var(--font-m);font-size:.68rem;color:var(--muted)" id="user-label">—</span>
@@ -359,18 +363,81 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 <!-- ADD/REPLACE SHEET MODAL -->
 <div class="modal-overlay" id="add-sheet-modal">
-  <div class="modal-box">
+  <div class="modal-box" style="width:440px;max-width:96vw">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div class="modal-title">📄 Gerenciar Ficha</div>
       <button class="modal-close" onclick="document.getElementById('add-sheet-modal').classList.remove('open')">✕</button>
     </div>
-    <div id="add-sheet-modal-body"></div>
-    <button class="btn btn-accent full" onclick="document.getElementById('add-sheet-file').click()">📂 Carregar JSON da Ficha</button>
-    <input type="file" id="add-sheet-file" accept=".json" style="display:none" onchange="handleAddSheetFile(event)"/>
-    <div id="add-sheet-preview" style="display:none;flex-direction:column;gap:8px">
-      <div style="font-family:var(--font-d);font-size:.58rem;color:var(--accent);letter-spacing:1px">PRÉVIA</div>
-      <div class="preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8;background:var(--card);padding:8px"></div>
-      <button class="btn btn-accent full" onclick="confirmAddSheet()">✓ Confirmar</button>
+    <div style="display:flex;border-bottom:1px solid var(--border2);margin-bottom:4px">
+      <button class="sheet-tab active" id="mtab-json" onclick="switchMasterSheetTab('json')">📂 Carregar JSON</button>
+      <button class="sheet-tab" id="mtab-simple" onclick="switchMasterSheetTab('simple')">✏️ Criar Ficha</button>
+    </div>
+    <!-- TAB JSON -->
+    <div id="mtab-content-json">
+      <div id="add-sheet-modal-body"></div>
+      <button class="btn btn-accent full" onclick="document.getElementById('add-sheet-file').click()">📂 Carregar JSON da Ficha</button>
+      <input type="file" id="add-sheet-file" accept=".json" style="display:none" onchange="handleAddSheetFile(event)"/>
+      <div id="add-sheet-preview" style="display:none;flex-direction:column;gap:8px">
+        <div style="font-family:var(--font-d);font-size:.58rem;color:var(--accent);letter-spacing:1px">PRÉVIA</div>
+        <div class="preview-content" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);line-height:1.8;background:var(--card);padding:8px"></div>
+        <button class="btn btn-accent full" onclick="confirmAddSheet()">✓ Confirmar</button>
+      </div>
+    </div>
+    <!-- TAB CRIAR FICHA -->
+    <div id="mtab-content-simple" style="display:none;flex-direction:column;gap:10px">
+      <div id="ms-target-row" style="font-family:var(--font-m);font-size:.65rem;color:var(--muted)"></div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div onclick="document.getElementById('ms-avatar-inp').click()"
+          style="width:72px;height:72px;border:1px solid var(--border2);cursor:pointer;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;overflow:hidden;position:relative">
+          <span id="ms-avatar-placeholder">👤</span>
+          <img id="ms-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;object-position:top;position:absolute;inset:0"/>
+        </div>
+        <input type="file" id="ms-avatar-inp" accept="image/*" style="display:none" onchange="msLoadAvatar(event)"/>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <div><label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:3px">NOME</label>
+            <input class="inp" id="ms-name" type="text" placeholder="Nome do personagem" style="font-size:.78rem;padding:5px 8px"/></div>
+          <div><label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:3px">CLASSE / TIPO</label>
+            <input class="inp" id="ms-cls" type="text" placeholder="Ex: Guerreiro / O Lutador" style="font-size:.78rem;padding:5px 8px"/></div>
+        </div>
+      </div>
+      <div>
+        <label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase">Atributos</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          <div style="background:var(--card);border:1px solid rgba(255,95,126,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">ATQ</div>
+            <input id="ms-atq" type="number" min="0" max="20" value="3" oninput="msRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+          <div style="background:var(--card);border:1px solid rgba(58,255,200,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">RES</div>
+            <input id="ms-res" type="number" min="0" max="20" value="3" oninput="msRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+          <div style="background:var(--card);border:1px solid rgba(200,123,255,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">SAB</div>
+            <input id="ms-sab" type="number" min="0" max="20" value="3" oninput="msRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+          <div style="background:var(--card);border:1px solid rgba(107,95,255,.3);padding:6px;text-align:center">
+            <div style="font-size:.48rem;color:var(--muted);margin-bottom:3px">AGI</div>
+            <input id="ms-agi" type="number" min="0" max="20" value="3" oninput="msRecalc()"
+              style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-d);font-size:1.1rem;color:var(--accent);text-align:center"/></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="background:var(--card);border:1px solid var(--border2);padding:6px;text-align:center">
+          <div style="font-size:.48rem;color:var(--muted);margin-bottom:2px">VITALIDADE</div>
+          <div id="ms-vit" style="font-family:var(--font-d);font-size:1rem;color:var(--hp)">11</div>
+          <div style="font-size:.48rem;color:var(--border2)">10 + (RES÷2)</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border2);padding:6px;text-align:center">
+          <div style="font-size:.48rem;color:var(--muted);margin-bottom:2px">VONTADE</div>
+          <div id="ms-von" style="font-family:var(--font-d);font-size:1rem;color:var(--wp)">11</div>
+          <div style="font-size:.48rem;color:var(--border2)">10 + (SAB÷2)</div>
+        </div>
+      </div>
+      <div>
+        <label style="font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:4px">PODERES / HABILIDADES</label>
+        <textarea class="inp" id="ms-powers" rows="2" placeholder="Ex: Ataque Mágico 2&#10;Escudo Mágico 2" style="font-size:.75rem;resize:none"></textarea>
+      </div>
+      <button class="btn btn-accent full" onclick="confirmMasterSimpleSheet()">✓ Enviar Ficha</button>
     </div>
   </div>
 </div>
@@ -453,12 +520,9 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 // ── AUTH ──────────────────────────────────────────────────────────
 const token = localStorage.getItem('hi_token');
 const me = JSON.parse(localStorage.getItem('hi_user') || 'null');
-const roomId = localStorage.getItem('hi_room') || 'herois';
-const roomName = localStorage.getItem('hi_room_name') || 'Heróis Improváveis';
 
 function logout() {
   localStorage.removeItem('hi_token'); localStorage.removeItem('hi_user');
-  localStorage.removeItem('hi_room'); localStorage.removeItem('hi_room_name');
   window.location.href = '/';
 }
 
@@ -466,8 +530,6 @@ if (!token || !me || me.role !== 'master') {
   window.location.href = '/';
 } else {
   document.getElementById('user-label').textContent = me.displayName + ' (Mestre)';
-  document.getElementById('room-label').textContent = '[ ' + roomName + ' ]';
-  document.title = roomName + ' — Mestre';
 }
 
 // ── IMAGE TOOLS ───────────────────────────────────────────────────
@@ -540,8 +602,8 @@ async function restoreData(e) {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    if(!data.users)
-      throw new Error('Arquivo inválido — falta campo users');
+    if(!data.users || !data.sheets || !data.sessions || !data.history)
+      throw new Error('Arquivo inválido — não parece ser um backup completo');
     const res = await fetch('/api/restore', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -580,7 +642,7 @@ function saveLog() {
 }
 
 function openIntroModal() {
-  fetch('/api/rooms/' + roomId + '/session', { headers: { 'Authorization': `Bearer ${token}` } })
+  fetch('/api/session', { headers: { 'Authorization': `Bearer ${token}` } })
     .then(r => r.json())
     .then(s => {
       document.getElementById('intro-text').value = s.intro || '';
@@ -595,7 +657,7 @@ async function saveIntro() {
   const text = document.getElementById('intro-text').value.trim();
   if (!text) { toast('Digite o texto de abertura'); return; }
   try {
-    const res = await fetch('/api/rooms/' + roomId + '/session', {
+    const res = await fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ intro: text })
@@ -609,7 +671,7 @@ async function saveIntro() {
 async function clearIntro() {
   if (!confirm('Remover a narração de abertura?')) return;
   try {
-    await fetch('/api/rooms/' + roomId + '/session', {
+    await fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ intro: '' })
@@ -621,7 +683,7 @@ async function clearIntro() {
 }
 
 // ── SOCKET ───────────────────────────────────────────────────────
-const socket = io({ auth: { token, roomId } });
+const socket = io({ auth: { token } });
 let sheets = {};
 let activeDifficulty = null;
 
@@ -957,6 +1019,18 @@ function openAddSheetModal(targetUsername = null) {
   document.getElementById('add-sheet-modal-body').innerHTML = modalHTML;
   document.getElementById('add-sheet-preview').style.display = 'none';
   document.getElementById('add-sheet-file').value = '';
+  // Reset simple tab
+  document.getElementById('ms-target-row').textContent = targetUsername ? 'Jogador: ' + targetUsername : '';
+  document.getElementById('ms-name').value = '';
+  document.getElementById('ms-cls').value = '';
+  ['ms-atq','ms-res','ms-sab','ms-agi'].forEach(id => { const el=document.getElementById(id); if(el) el.value=3; });
+  document.getElementById('ms-vit').textContent = '11';
+  document.getElementById('ms-von').textContent = '11';
+  document.getElementById('ms-powers').value = '';
+  document.getElementById('ms-avatar-img').style.display = 'none';
+  document.getElementById('ms-avatar-placeholder').style.display = '';
+  msAvatarBase64 = '';
+  switchMasterSheetTab('json');
   document.getElementById('add-sheet-modal').classList.add('open');
 }
 
@@ -978,7 +1052,7 @@ function openReplaceSheetModal(username) {
 async function removeSheet(username) {
   if (!confirm(`Remover a ficha de ${username}?`)) return;
   try {
-    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+    const res = await fetch(`/api/sheets/${username}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -1010,7 +1084,7 @@ async function confirmAddSheet() {
   const username = addSheetTarget || document.getElementById('add-sheet-user')?.value.trim();
   if (!username) { toast('Digite o username do jogador'); return; }
   try {
-    const res = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+    const res = await fetch(`/api/sheets/${username}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(pendingAddSheet)
@@ -1306,6 +1380,68 @@ async function changePassword() {
     errEl.textContent = 'Erro de conexão ao alterar senha.';
     errEl.style.display = 'block';
   }
+}
+
+// ── MASTER SHEET TABS ────────────────────────────────────────────
+function switchMasterSheetTab(tab) {
+  document.getElementById('mtab-content-json').style.display   = tab==='json'   ? '' : 'none';
+  document.getElementById('mtab-content-simple').style.display = tab==='simple' ? 'flex' : 'none';
+  document.getElementById('mtab-json').classList.toggle('active', tab==='json');
+  document.getElementById('mtab-simple').classList.toggle('active', tab==='simple');
+}
+
+let msAvatarBase64 = '';
+
+function msLoadAvatar(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    msAvatarBase64 = ev.target.result;
+    document.getElementById('ms-avatar-img').src = ev.target.result;
+    document.getElementById('ms-avatar-img').style.display = 'block';
+    document.getElementById('ms-avatar-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function msRecalc() {
+  const res = parseInt(document.getElementById('ms-res').value)||0;
+  const sab = parseInt(document.getElementById('ms-sab').value)||0;
+  document.getElementById('ms-vit').textContent = 10 + Math.floor(res/2);
+  document.getElementById('ms-von').textContent = 10 + Math.floor(sab/2);
+}
+
+async function confirmMasterSimpleSheet() {
+  const name = document.getElementById('ms-name').value.trim();
+  if (!name) { toast('Digite o nome do personagem'); return; }
+  const username = addSheetTarget || document.getElementById('add-sheet-user')?.value.trim();
+  if (!username) { toast('Digite o username do jogador'); return; }
+  const atq = parseInt(document.getElementById('ms-atq').value)||0;
+  const res = parseInt(document.getElementById('ms-res').value)||0;
+  const sab = parseInt(document.getElementById('ms-sab').value)||0;
+  const agi = parseInt(document.getElementById('ms-agi').value)||0;
+  const vit = 10 + Math.floor(res/2);
+  const von = 10 + Math.floor(sab/2);
+  const clsRaw = document.getElementById('ms-cls').value.trim();
+  const [cls, type] = clsRaw.includes('/') ? clsRaw.split('/').map(s=>s.trim()) : [clsRaw, ''];
+  const powers = document.getElementById('ms-powers').value.trim().split('\n').filter(Boolean);
+  const sheet = {
+    name, cls: cls||'—', type: type||'—',
+    atq, res, sab, agi, vit, vontade: von,
+    power1: powers[0]||'', power2: powers[1]||'', power3: powers[2]||'',
+    avatar: msAvatarBase64||'', simpleSheet: true,
+  };
+  try {
+    const r = await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(sheet)
+    });
+    if (!r.ok) throw new Error((await r.json()).error||'Erro');
+    toast(`✅ Ficha de ${username} enviada!`);
+    document.getElementById('add-sheet-modal').classList.remove('open');
+    msAvatarBase64 = '';
+  } catch(e) { toast('Erro: ' + e.message); }
 }
 
 function toast(msg,dur=2500){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur); }
