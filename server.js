@@ -227,8 +227,60 @@ app.get('/api/rooms/:roomId/history', authMiddleware, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════
-// BACKUP / RESTORE
+// DOCS ROUTES (per room)
 // ══════════════════════════════════════════════════════════════════
+
+// Get all docs (folders + documents)
+app.get('/api/rooms/:roomId/docs', authMiddleware, (req, res) => {
+  res.json(readRoomDB(req.params.roomId, 'docs') || { folders: {}, docs: {} });
+});
+
+// Create or update a document
+app.post('/api/rooms/:roomId/docs/:docId', authMiddleware, masterOnly, (req, res) => {
+  const db = readRoomDB(req.params.roomId, 'docs') || { folders: {}, docs: {} };
+  if (!db.docs) db.docs = {};
+  db.docs[req.params.docId] = {
+    ...req.body,
+    id: req.params.docId,
+    updatedAt: new Date().toISOString()
+  };
+  writeRoomDB(req.params.roomId, 'docs', db);
+  io.to(`room:${req.params.roomId}`).emit('docs_updated', db);
+  res.json({ ok: true });
+});
+
+// Delete a document
+app.delete('/api/rooms/:roomId/docs/:docId', authMiddleware, masterOnly, (req, res) => {
+  const db = readRoomDB(req.params.roomId, 'docs') || { folders: {}, docs: {} };
+  delete db.docs?.[req.params.docId];
+  writeRoomDB(req.params.roomId, 'docs', db);
+  io.to(`room:${req.params.roomId}`).emit('docs_updated', db);
+  res.json({ ok: true });
+});
+
+// Create or rename a folder
+app.post('/api/rooms/:roomId/docs-folder', authMiddleware, masterOnly, (req, res) => {
+  const db = readRoomDB(req.params.roomId, 'docs') || { folders: {}, docs: {} };
+  if (!db.folders) db.folders = {};
+  const { id, name } = req.body;
+  db.folders[id] = { id, name, createdAt: new Date().toISOString() };
+  writeRoomDB(req.params.roomId, 'docs', db);
+  io.to(`room:${req.params.roomId}`).emit('docs_updated', db);
+  res.json({ ok: true });
+});
+
+// Delete a folder (and its docs)
+app.delete('/api/rooms/:roomId/docs-folder/:folderId', authMiddleware, masterOnly, (req, res) => {
+  const db = readRoomDB(req.params.roomId, 'docs') || { folders: {}, docs: {} };
+  delete db.folders?.[req.params.folderId];
+  // Remove docs in this folder
+  Object.keys(db.docs || {}).forEach(id => {
+    if (db.docs[id].folderId === req.params.folderId) delete db.docs[id];
+  });
+  writeRoomDB(req.params.roomId, 'docs', db);
+  io.to(`room:${req.params.roomId}`).emit('docs_updated', db);
+  res.json({ ok: true });
+});
 app.get('/api/backup', authMiddleware, masterOnly, (req, res) => {
   const rooms = readDB('rooms');
   const roomData = {};
@@ -237,6 +289,7 @@ app.get('/api/backup', authMiddleware, masterOnly, (req, res) => {
       sheets:  readRoomDB(id, 'sheets'),
       history: readRoomDB(id, 'history'),
       session: readRoomDB(id, 'session'),
+      docs:    readRoomDB(id, 'docs'),
     };
   });
   res.json({ version: 2, exportedAt: new Date().toISOString(), users: readDB('users'), rooms, roomData });
@@ -255,6 +308,7 @@ app.post('/api/restore', authMiddleware, masterOnly, (req, res) => {
       if (data.sheets)  writeRoomDB(id, 'sheets',  data.sheets);
       if (data.history) writeRoomDB(id, 'history', data.history);
       if (data.session) writeRoomDB(id, 'session', data.session);
+      if (data.docs)    writeRoomDB(id, 'docs',    data.docs);
     });
 
   // ── v1 backup (legacy: sheets/history/sessions at root) ──
