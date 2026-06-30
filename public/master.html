@@ -402,7 +402,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   <!-- PLAYERS TAB -->
   <div id="tab-players"></div>
 
-
   <!-- DOCS TAB -->
   <div id="tab-docs">
     <div id="docs-layout">
@@ -410,8 +409,8 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         <div id="docs-sidebar-header">
           <span>📁 DOCUMENTOS</span>
           <div style="display:flex;gap:4px">
-            <button class="doc-act-btn" onclick="newFolder()" title="Nova pasta" style="font-size:.8rem">📁+</button>
-            <button class="doc-act-btn" onclick="newDoc(null)" title="Novo documento" style="font-size:.8rem">📄+</button>
+            <button class="doc-act-btn" onclick="newFolder()" title="Nova pasta" style="font-size:.85rem;color:var(--accent2)">📁+</button>
+            <button class="doc-act-btn" onclick="newDoc(null)" title="Novo documento" style="font-size:.85rem;color:var(--accent)">📄+</button>
           </div>
         </div>
         <div id="docs-tree"></div>
@@ -421,7 +420,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
           <button class="md-btn" onclick="mdWrap('**','**')" title="Negrito">𝐁</button>
           <button class="md-btn" onclick="mdWrap('*','*')" title="Itálico">𝐼</button>
           <button class="md-btn" onclick="mdWrap('***','***')" title="Negrito+Itálico">𝑩𝑰</button>
-          <button class="md-btn" onclick="mdWrap('\`','\`')" title="Código">&lt;&gt;</button>
+          <button class="md-btn" onclick="mdWrap('`','`')" title="Código">&lt;&gt;</button>
           <div class="md-btn-sep"></div>
           <button class="md-btn" onclick="mdLine('# ')" title="H1">H1</button>
           <button class="md-btn" onclick="mdLine('## ')" title="H2">H2</button>
@@ -448,7 +447,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         </div>
         <div id="docs-empty">
           <div style="font-size:2.5rem;opacity:.3">📄</div>
-          <p style="font-family:var(--font-m);font-size:.7rem">Selecione um documento ou crie um novo</p>
+          <p style="font-family:var(--font-m);font-size:.7rem;color:var(--muted)">Selecione um documento ou crie um novo</p>
           <button class="btn btn-accent sm" onclick="newDoc(null)">+ Novo Documento</button>
         </div>
       </div>
