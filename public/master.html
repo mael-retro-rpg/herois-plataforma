@@ -1635,6 +1635,7 @@ socket.on('docs_updated',db=>{docsDB=db;renderDocsTree();});
 function renderDocsTree(){
   const tree=document.getElementById('docs-tree'); if(!tree) return;
   tree.innerHTML='';
+  if(!docsDB) docsDB={folders:{},docs:{}};
   const{folders={},docs={}}=docsDB;
   Object.values(docs).filter(d=>!d.folderId).sort((a,b)=>(a.title||'').localeCompare(b.title||'')).forEach(d=>tree.appendChild(makeDocItem(d)));
   Object.values(folders).sort((a,b)=>a.name.localeCompare(b.name)).forEach(f=>{
@@ -1694,6 +1695,9 @@ async function deleteDoc(id){
 }
 function newDoc(folderId){
   if(docsUnsaved&&!confirm('Descartar alterações?')) return;
+  if(!docsDB) docsDB={folders:{},docs:{}};
+  if(!docsDB.docs) docsDB.docs={};
+  if(!docsDB.folders) docsDB.folders={};
   currentDocId='doc_'+Date.now().toString(36);
   docsDB.docs[currentDocId]={id:currentDocId,title:'',body:'',folderId:folderId||null};
   document.getElementById('docs-title-inp').value='';
