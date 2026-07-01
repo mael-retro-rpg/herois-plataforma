@@ -1623,10 +1623,10 @@ function toggleMobileChat(){
   b.textContent=o?'✕':'💬';
 }
 
-// ── DOCS SYSTEM ───────────────────────────────────────────────────
-let docsDB={folders:{},docs:{}},currentDocId=null,docsUnsaved=false,docsSaveTimer=null;
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+// ── DOCS SYSTEM ───────────────────────────────────────────────────
+let docsDB={folders:{},docs:{}},currentDocId=null,docsUnsaved=false,docsSaveTimer=null;
 async function loadDocs(){
   try{const res=await fetch(`/api/rooms/${roomId}/docs`,{headers:{Authorization:`Bearer ${token}`}});if(res.ok)docsDB=await res.json();}catch{}
   renderDocsTree();
