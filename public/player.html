@@ -453,22 +453,6 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 </div>
 
 <div id="toast"></div>
-
-<!-- DOCS PANEL (read-only para jogadores) -->
-<div id="docs-panel">
-  <div id="docs-panel-inner">
-    <div id="docs-panel-header">
-      <h2>📁 Documentos da Mesa</h2>
-      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem" onclick="closeDocsPanel()">✕</button>
-    </div>
-    <div id="docs-panel-body">
-      <div id="docs-panel-sidebar"></div>
-      <div id="docs-panel-content">
-        <div style="padding:20px;font-family:var(--font-m);font-size:.7rem;color:var(--muted)">Selecione um documento na lista.</div>
-      </div>
-    </div>
-  </div>
-</div>
 <button id="chat-toggle-btn" onclick="toggleMobileChat()" title="Chat">💬</button>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -618,9 +602,14 @@ function buildSheetPopupHTML(s){
   const wpPct = Math.max(0,Math.round(von/d.vontade*100));
   const powers = [s.power1,s.power2,s.power3].filter(Boolean);
   const dmg = getDamageValues(s);
+  const isMySheet = s.username === me.username;
+  const avatarEditBtn = isMySheet
+    ? `<div onclick="document.getElementById('popup-avatar-inp').click()" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:var(--accent);font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;text-align:center;padding:4px;cursor:pointer;opacity:0;transition:.2s" class="avatar-edit-overlay">📷 TROCAR</div>
+       <input type="file" id="popup-avatar-inp" accept="image/*" style="display:none" onchange="updateSheetAvatar(event,'${s.username}')"/>`
+    : '';
   const avatarHTML = s.avatar
-    ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>`
-    : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
+    ? `<div style="position:relative;overflow:hidden" onmouseenter="this.querySelector('.avatar-edit-overlay')&&(this.querySelector('.avatar-edit-overlay').style.opacity=1)" onmouseleave="this.querySelector('.avatar-edit-overlay')&&(this.querySelector('.avatar-edit-overlay').style.opacity=0)"><img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>${avatarEditBtn}</div>`
+    : `<div style="position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
   return `
     <div style="border-right:1px solid var(--border2);display:flex;flex-direction:column">
       <div style="border-bottom:1px solid var(--border2)">${avatarHTML}</div>
@@ -674,6 +663,28 @@ function buildSheetPopupHTML(s){
     </div>`;
 }
 
+
+async function updateSheetAvatar(e, username) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const avatar = ev.target.result;
+    if (!sheets[username]) return;
+    sheets[username].avatar = avatar;
+    try {
+      await fetch('/api/rooms/' + roomId + '/sheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(sheets[username])
+      });
+      toast('📷 Avatar atualizado!');
+      openSheetPopup(username);
+      renderHUD();
+    } catch { toast('Erro ao atualizar avatar'); }
+  };
+  reader.readAsDataURL(file);
+}
+
 function openSheetPopup(username){
   const s=sheets[username]; if(!s) return;
   document.getElementById('sheet-popup-content').innerHTML=buildSheetPopupHTML(s);
@@ -716,9 +727,12 @@ function renderHUD() {
 
     const card = document.createElement('div');
     card.className = `hud-char ${isMe?'me':''}`;
+    const avatarThumb = s.avatar
+      ? `<img src="${s.avatar}" style="width:28px;height:28px;border-radius:2px;object-fit:cover;object-position:top;flex-shrink:0"/>`
+      : `<span class="hud-char-emoji">${CLS_EMOJI[s.cls]||'❓'}</span>`;
     card.innerHTML = `
       <div class="hud-char-header">
-        <span class="hud-char-emoji">${CLS_EMOJI[s.cls]||'❓'}</span>
+        ${avatarThumb}
         <span class="hud-char-name">${s.name||s.username}</span>
         ${isMe?'<span class="me-tag">EU</span>':''}
       </div>

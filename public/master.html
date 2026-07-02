@@ -925,9 +925,11 @@ function buildSheetPopupHTML(s){
   const wpPct = Math.max(0,Math.round(von/d.vontade*100));
   const powers = [s.power1,s.power2,s.power3].filter(Boolean);
     const dmg = getDamageValues(s);
+  const avatarEditBtn = `<div onclick="document.getElementById('popup-avatar-inp-m').click()" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:var(--accent);font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;text-align:center;padding:4px;cursor:pointer;opacity:0;transition:.2s" class="avatar-edit-overlay">📷 TROCAR</div>
+    <input type="file" id="popup-avatar-inp-m" accept="image/*" style="display:none" onchange="updateSheetAvatarMaster(event,'${s.username}')"/>`;
   const avatarHTML = s.avatar
-    ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>`
-    : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
+    ? `<div style="position:relative;overflow:hidden" onmouseenter="this.querySelector('.avatar-edit-overlay').style.opacity=1" onmouseleave="this.querySelector('.avatar-edit-overlay').style.opacity=0"><img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>${avatarEditBtn}</div>`
+    : `<div style="position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
 
   return `
     <!-- LEFT -->
@@ -989,6 +991,28 @@ function buildSheetPopupHTML(s){
     </div>`;
 }
 
+
+async function updateSheetAvatarMaster(e, username) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const avatar = ev.target.result;
+    if (!sheets[username]) return;
+    sheets[username].avatar = avatar;
+    try {
+      await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(sheets[username])
+      });
+      toast('📷 Avatar atualizado!');
+      openSheetPopup(username);
+      renderHUD();
+    } catch { toast('Erro ao atualizar avatar'); }
+  };
+  reader.readAsDataURL(file);
+}
+
 function openSheetPopup(username){
   const s = sheets[username]; if(!s) return;
   document.getElementById('sheet-popup-content').innerHTML = buildSheetPopupHTML(s);
@@ -1007,9 +1031,12 @@ function renderHUD() {
     const von = s.vonCur ?? d.vontade;
     const hpPct = Math.max(0,Math.round(vit/d.vit*100));
     const wpPct = Math.max(0,Math.round(von/d.vontade*100));
+    const avatarThumbM = s.avatar
+      ? `<img src="${s.avatar}" style="width:24px;height:24px;border-radius:2px;object-fit:cover;object-position:top;vertical-align:middle;margin-right:4px"/>`
+      : `${CLS_EMOJI[s.cls]||'❓'} `;
     el.innerHTML += `
       <div class="mhud-char" onclick="openSheetPopup('${s.username}')">
-        <div class="mhud-char-name">${CLS_EMOJI[s.cls]||'❓'} ${s.name||s.username}</div>
+        <div class="mhud-char-name">${avatarThumbM}${s.name||s.username}</div>
         <div class="mhud-char-sub">${s.cls||'?'} · ${s.type||'?'}</div>
         <div class="mhud-edit">
           <span style="font-size:.48rem;color:var(--muted)">VIT</span>
@@ -1623,8 +1650,6 @@ function toggleMobileChat(){
   b.textContent=o?'✕':'💬';
 }
 
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
 // ── DOCS SYSTEM ───────────────────────────────────────────────────
 let docsDB={folders:{},docs:{}},currentDocId=null,docsUnsaved=false,docsSaveTimer=null;
 async function loadDocs(){
@@ -1635,7 +1660,6 @@ socket.on('docs_updated',db=>{docsDB=db;renderDocsTree();});
 function renderDocsTree(){
   const tree=document.getElementById('docs-tree'); if(!tree) return;
   tree.innerHTML='';
-  if(!docsDB) docsDB={folders:{},docs:{}};
   const{folders={},docs={}}=docsDB;
   Object.values(docs).filter(d=>!d.folderId).sort((a,b)=>(a.title||'').localeCompare(b.title||'')).forEach(d=>tree.appendChild(makeDocItem(d)));
   Object.values(folders).sort((a,b)=>a.name.localeCompare(b.name)).forEach(f=>{
@@ -1695,9 +1719,6 @@ async function deleteDoc(id){
 }
 function newDoc(folderId){
   if(docsUnsaved&&!confirm('Descartar alterações?')) return;
-  if(!docsDB) docsDB={folders:{},docs:{}};
-  if(!docsDB.docs) docsDB.docs={};
-  if(!docsDB.folders) docsDB.folders={};
   currentDocId='doc_'+Date.now().toString(36);
   docsDB.docs[currentDocId]={id:currentDocId,title:'',body:'',folderId:folderId||null};
   document.getElementById('docs-title-inp').value='';
