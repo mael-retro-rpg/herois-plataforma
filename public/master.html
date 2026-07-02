@@ -876,12 +876,45 @@ socket.on('log_cleared', data => {
 // ── SHARED SHEET BUILDER ─────────────────────────────────────────
 const CLS_EMOJI = {'Guerreiro':'⚔️','Cavaleiro':'🛡️','Mago':'✨','Clérigo':'✝️','Caçador':'🏹','Ladino':'🗡️'};
 
+
+const EQUIP_STATS={
+  'Espada':{ATQ:1,FIS:1,MAG:2},'Espada de Duas Mãos':{ATQ:1,INI:-1,FIS:2,MAG:2},
+  'Duas Espadas':{ATQ:2,INI:1,FIS:1},'Machado':{ATQ:1,FIS:2,MAG:1},
+  'Machado de Duas Mãos':{ATQ:1,INI:-1,FIS:3,MAG:1},'Dois Machados':{ATQ:1,INI:1,FIS:2},
+  'Martelo':{ATQ:1,FIS:2,MAG:1},'Martelo de Duas Mãos':{ATQ:1,INI:-1,FIS:3,MAG:1},
+  'Montante':{ATQ:2,INI:-2,FIS:4},'Mangual':{ATQ:1,INI:-1,FIS:3,MAG:1},
+  'Sem Arma':{ATQ:1,INI:2,DEF:1},
+  'Escudo de Combate':{ATQ:1,DEF:3},'Escudos Duplos':{INI:-1,DEF:4,MAG:1},
+  'Espada e Escudo':{ATQ:1,DEF:2,FIS:1},'Lança e Escudo':{ATQ:2,DEF:2},
+  'Machado e Escudo':{ATQ:1,DEF:2,FIS:2,MAG:-1},'Martelo e Escudo':{ATQ:1,DEF:2,FIS:2,MAG:-1},
+  'Cajado':{MAG:4},'Grimório':{MAG:4},'Amuleto':{MAG:4},
+  'Arco':{ATQ:3,FIS:1},'Besta':{ATQ:3,FIS:1},
+  'Adaga':{ATQ:1,INI:1,FIS:2},'Duas Adagas':{ATQ:2,INI:1,FIS:1},
+  'Lança':{ATQ:2,MAG:2},'Chicote':{ATQ:1,INI:1,FIS:1,MAG:1},
+  'Armadura de Couro':{DEF:3,INI:1},'Cota de Malha':{DEF:4},
+  'Meia Armadura':{DEF:5,INI:-1},'Armadura Pesada':{DEF:6,INI:-2},
+};
 function calcDerived(s){
   const atq=parseInt(s.atq)||0, res=parseInt(s.res)||0, sab=parseInt(s.sab)||0, agi=parseInt(s.agi)||0;
-  // Try to get equipment bonuses from sheet eq1/eq2 fields if stored
+  // Equipment bonuses
+  const e1=EQUIP_STATS[s.eq1]||{}, e2=EQUIP_STATS[s.eq2]||{};
+  const eATQ=(e1.ATQ||0)+(e2.ATQ||0);
+  const eINI=(e1.INI||0)+(e2.INI||0);
+  const eDEF=(e1.DEF||0)+(e2.DEF||0);
+  const eFIS=(e1.FIS||0)+(e2.FIS||0);
+  const eMAG=(e1.MAG||0)+(e2.MAG||0);
+  const eRMAG=(e1.RMAG||0)+(e2.RMAG||0);
   return {
-    ini: 2+agi, jAtq: atq, def: 4+res, rmag: 4+sab,
-    vit: 10+Math.floor(res/2), vontade: 10+Math.floor(sab/2)
+    ini: 2+agi+eINI,
+    jAtq: atq+eATQ,
+    def: 4+res+eDEF,
+    rmag: 4+sab+eRMAG,
+    vit: 10+Math.floor(res/2),
+    vontade: 10+Math.floor(sab/2),
+    danoFis: eFIS,
+    danoMag: eMAG,
+    eq1: s.eq1||'', eq2: s.eq2||'',
+    eATQ, eINI, eDEF, eFIS, eMAG, eRMAG
   };
 }
 
@@ -925,11 +958,9 @@ function buildSheetPopupHTML(s){
   const wpPct = Math.max(0,Math.round(von/d.vontade*100));
   const powers = [s.power1,s.power2,s.power3].filter(Boolean);
     const dmg = getDamageValues(s);
-  const avatarEditBtn = `<div onclick="document.getElementById('popup-avatar-inp-m').click()" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:var(--accent);font-family:var(--font-d);font-size:.5rem;letter-spacing:1px;text-align:center;padding:4px;cursor:pointer;opacity:0;transition:.2s" class="avatar-edit-overlay">📷 TROCAR</div>
-    <input type="file" id="popup-avatar-inp-m" accept="image/*" style="display:none" onchange="updateSheetAvatarMaster(event,'${s.username}')"/>`;
   const avatarHTML = s.avatar
-    ? `<div style="position:relative;overflow:hidden" onmouseenter="this.querySelector('.avatar-edit-overlay').style.opacity=1" onmouseleave="this.querySelector('.avatar-edit-overlay').style.opacity=0"><img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>${avatarEditBtn}</div>`
-    : `<div style="position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
+    ? `<img src="${s.avatar}" style="width:160px;height:160px;object-fit:cover;object-position:top;display:block"/>`
+    : `<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--card)">${CLS_EMOJI[s.cls]||'❓'}</div>`;
 
   return `
     <!-- LEFT -->
@@ -977,8 +1008,15 @@ function buildSheetPopupHTML(s){
       </div>
       ${s.eq1||s.eq2?`<div>
         <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Equipamento</div>
-        ${s.eq1?`<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2);margin-bottom:3px">${s.eq1}</div>`:''}
-        ${s.eq2?`<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2)">${s.eq2}</div>`:''}
+        ${s.eq1?`<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2);margin-bottom:2px">${s.eq1}</div>`:''}
+        ${s.eq2?`<div style="font-family:var(--font-d);font-size:.65rem;color:var(--accent2);margin-bottom:4px">${s.eq2}</div>`:''}
+        ${(d.eATQ||d.eINI||d.eDEF||d.eFIS||d.eMAG)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          ${d.eATQ?`<span style="font-family:var(--font-m);font-size:.58rem;color:var(--accent3)">ATQ${d.eATQ>0?'+':''}${d.eATQ}</span>`:''}
+          ${d.eINI?`<span style="font-family:var(--font-m);font-size:.58rem;color:var(--accent2)">INI${d.eINI>0?'+':''}${d.eINI}</span>`:''}
+          ${d.eDEF?`<span style="font-family:var(--font-m);font-size:.58rem;color:var(--hp)">DEF${d.eDEF>0?'+':''}${d.eDEF}</span>`:''}
+          ${d.eFIS?`<span style="font-family:var(--font-m);font-size:.58rem;color:var(--accent3)">D.Fís+${d.eFIS}</span>`:''}
+          ${d.eMAG?`<span style="font-family:var(--font-m);font-size:.58rem;color:var(--wp)">D.Mag+${d.eMAG}</span>`:''}
+        </div>`:''}
       </div>`:''}
       ${powers.length?`<div>
         <div style="font-family:var(--font-d);font-size:.48rem;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;text-transform:uppercase">Poderes</div>
@@ -989,28 +1027,6 @@ function buildSheetPopupHTML(s){
         <div style="font-size:.72rem;color:var(--muted);line-height:1.6;white-space:pre-wrap">${s.notes}</div>
       </div>`:''}
     </div>`;
-}
-
-
-async function updateSheetAvatarMaster(e, username) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    const avatar = ev.target.result;
-    if (!sheets[username]) return;
-    sheets[username].avatar = avatar;
-    try {
-      await fetch(`/api/rooms/${roomId}/sheets/${username}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(sheets[username])
-      });
-      toast('📷 Avatar atualizado!');
-      openSheetPopup(username);
-      renderHUD();
-    } catch { toast('Erro ao atualizar avatar'); }
-  };
-  reader.readAsDataURL(file);
 }
 
 function openSheetPopup(username){
@@ -1031,12 +1047,9 @@ function renderHUD() {
     const von = s.vonCur ?? d.vontade;
     const hpPct = Math.max(0,Math.round(vit/d.vit*100));
     const wpPct = Math.max(0,Math.round(von/d.vontade*100));
-    const avatarThumbM = s.avatar
-      ? `<img src="${s.avatar}" style="width:24px;height:24px;border-radius:2px;object-fit:cover;object-position:top;vertical-align:middle;margin-right:4px"/>`
-      : `${CLS_EMOJI[s.cls]||'❓'} `;
     el.innerHTML += `
       <div class="mhud-char" onclick="openSheetPopup('${s.username}')">
-        <div class="mhud-char-name">${avatarThumbM}${s.name||s.username}</div>
+        <div class="mhud-char-name">${CLS_EMOJI[s.cls]||'❓'} ${s.name||s.username}</div>
         <div class="mhud-char-sub">${s.cls||'?'} · ${s.type||'?'}</div>
         <div class="mhud-edit">
           <span style="font-size:.48rem;color:var(--muted)">VIT</span>
